@@ -17,9 +17,8 @@
 
 .editor__grid {
   flex: 1;
-  display: grid;
-  place-items: center;
   min-height: 0;
+  overflow: auto;
   margin: 0 var(--space-4);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -27,7 +26,9 @@
 }
 
 .editor__placeholder {
+  padding: var(--space-5);
   color: var(--color-text-muted);
+  text-align: center;
 }
 
 .editor__arrangement {

@@ -27,6 +27,38 @@ const SYNTH_PRESET_LABELS: Readonly<Record<SynthPreset, string>> = {
   pad: 'Pad',
 }
 
+const DRUM_VOICE_LABELS: Readonly<Record<DrumVoice, string>> = {
+  kick: 'Kick',
+  snare: 'Snare',
+  hat: 'Hat',
+}
+
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
+const SEMITONES_PER_OCTAVE = NOTE_NAMES.length
+const MIDI_OCTAVE_OFFSET = 1
+
+function noteName(pitch: number): string {
+  return NOTE_NAMES[pitch % SEMITONES_PER_OCTAVE] ?? ''
+}
+
+export function isSharpPitch(instrument: Instrument, pitch: number): boolean {
+  return instrument.kind !== 'drums' && noteName(pitch).endsWith('#')
+}
+
+export function pitchLabel(instrument: Instrument, pitch: number): string {
+  if (instrument.kind === 'drums') {
+    const voice = DRUM_VOICES[pitch]
+    return voice ? DRUM_VOICE_LABELS[voice] : ''
+  }
+  const octave = Math.floor(pitch / SEMITONES_PER_OCTAVE) - MIDI_OCTAVE_OFFSET
+  return `${noteName(pitch)}${octave}`
+}
+
+export function pitchesFor(instrument: Instrument): readonly number[] {
+  const { min, max } = pitchRangeFor(instrument)
+  return Array.from({ length: max - min + 1 }, (_, index) => max - index)
+}
+
 export function pitchRangeFor(instrument: Instrument): PitchRange {
   return instrument.kind === 'drums' ? DRUM_PITCH_RANGE : MELODIC_PITCH_RANGE
 }

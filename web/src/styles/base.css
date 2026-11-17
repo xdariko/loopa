@@ -3,6 +3,8 @@
   --color-surface: #ffffff;
   --color-surface-muted: #efefec;
   --color-border: #e2e2de;
+  --color-border-strong: #c9c9c3;
+  --color-grid-line: #efefec;
   --color-text: #1f1f1d;
   --color-text-muted: #7a7a74;
   --color-accent: #4f6bed;
@@ -25,6 +27,8 @@
   --header-height: 48px;
   --sidebar-width: 220px;
   --arrangement-height: 160px;
+  --grid-label-width: 56px;
+  --grid-row-height: 20px;
 
   color-scheme: light;
 }
@@ -35,6 +39,8 @@
     --color-surface: #1c1c1f;
     --color-surface-muted: #242428;
     --color-border: #2e2e33;
+    --color-border-strong: #45454c;
+    --color-grid-line: #26262a;
     --color-text: #ececee;
     --color-text-muted: #8b8b93;
     --color-accent: #7b8ff5;

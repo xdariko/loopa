@@ -1,7 +1,3 @@
-<script setup lang="ts">
-defineProps<{ token: string }>()
-</script>
-
 <template>
   <section class="page">
     <h1 class="page__title">Общий проект</h1>
@@ -10,3 +6,7 @@ defineProps<{ token: string }>()
     </p>
   </section>
 </template>
+
+<script setup lang="ts">
+defineProps<{ token: string }>()
+</script>

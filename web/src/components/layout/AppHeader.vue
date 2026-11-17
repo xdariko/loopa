@@ -1,9 +1,3 @@
-<script setup lang="ts">
-import { ref } from 'vue'
-
-const projectTitle = ref('Без названия')
-</script>
-
 <template>
   <header class="header">
     <RouterLink to="/" class="header__logo">loopa</RouterLink>
@@ -19,3 +13,9 @@ const projectTitle = ref('Без названия')
     </nav>
   </header>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const projectTitle = ref('Без названия')
+</script>

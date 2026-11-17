@@ -1,11 +1,3 @@
-<script setup lang="ts">
-const tracks = [
-  { id: 'lead', name: 'Lead' },
-  { id: 'bass', name: 'Bass' },
-  { id: 'drums', name: 'Drums' },
-]
-</script>
-
 <template>
   <aside class="tracks">
     <h2 class="tracks__heading">Дорожки</h2>
@@ -25,3 +17,11 @@ const tracks = [
     </div>
   </aside>
 </template>
+
+<script setup lang="ts">
+const tracks = [
+  { id: 'lead', name: 'Lead' },
+  { id: 'bass', name: 'Bass' },
+  { id: 'drums', name: 'Drums' },
+]
+</script>

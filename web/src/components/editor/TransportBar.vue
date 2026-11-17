@@ -1,10 +1,3 @@
-<script setup lang="ts">
-import { ref } from 'vue'
-
-const isPlaying = ref(false)
-const bpm = ref(120)
-</script>
-
 <template>
   <div class="transport">
     <button
@@ -32,3 +25,10 @@ const bpm = ref(120)
     <button type="button" class="transport__menu" aria-label="Действия с паттерном">⋯</button>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const isPlaying = ref(false)
+const bpm = ref(120)
+</script>

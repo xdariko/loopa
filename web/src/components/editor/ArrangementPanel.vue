@@ -1,11 +1,3 @@
-<script setup lang="ts">
-const rows = [
-  { track: 'Lead', patterns: [1, 1, 2, 1] },
-  { track: 'Bass', patterns: [1, 1, 1, 2] },
-  { track: 'Drums', patterns: [1, 2, 1, 2] },
-]
-</script>
-
 <template>
   <section class="arrangement" aria-label="Композиция">
     <div v-for="row in rows" :key="row.track" class="arrangement__row">
@@ -23,3 +15,11 @@ const rows = [
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+const rows = [
+  { track: 'Lead', patterns: [1, 1, 2, 1] },
+  { track: 'Bass', patterns: [1, 1, 1, 2] },
+  { track: 'Drums', patterns: [1, 2, 1, 2] },
+]
+</script>

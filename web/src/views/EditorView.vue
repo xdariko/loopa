@@ -1,9 +1,3 @@
-<script setup lang="ts">
-import TrackPanel from '@/components/editor/TrackPanel.vue'
-import TransportBar from '@/components/editor/TransportBar.vue'
-import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
-</script>
-
 <template>
   <div class="editor">
     <TrackPanel class="editor__tracks" />
@@ -11,9 +5,27 @@ import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
     <section class="editor__workspace">
       <TransportBar />
       <div class="editor__grid" data-testid="grid-area">
-        <p class="editor__placeholder">Сетка паттерна</p>
+        <PatternGrid
+          v-if="editor.selectedTrack && editor.selectedPattern"
+          :pattern="editor.selectedPattern"
+          :instrument="editor.selectedTrack.instrument"
+          :selected-note-id="editor.selectedNoteId"
+          @add="editor.addNote"
+          @select="editor.selectNote"
+        />
+        <p v-else class="editor__placeholder">Добавьте дорожку, чтобы расставлять ноты</p>
       </div>
       <ArrangementPanel class="editor__arrangement" />
     </section>
   </div>
 </template>
+
+<script setup lang="ts">
+import TrackPanel from '@/components/editor/TrackPanel.vue'
+import TransportBar from '@/components/editor/TransportBar.vue'
+import PatternGrid from '@/components/editor/PatternGrid.vue'
+import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
+import { useEditorStore } from '@/stores/editor'
+
+const editor = useEditorStore()
+</script>

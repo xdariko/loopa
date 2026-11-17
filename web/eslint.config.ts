@@ -22,6 +22,14 @@ export default defineConfigWithVueTs(
   vueTsConfigs.recommended,
 
   {
+    name: 'app/vue-block-order',
+    files: ['**/*.vue'],
+    rules: {
+      'vue/block-order': ['error', { order: ['template', 'script'] }],
+    },
+  },
+
+  {
     ...pluginVitest.configs.recommended,
     files: ['tests/**/*'],
   },
