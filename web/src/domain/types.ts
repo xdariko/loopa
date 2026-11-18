@@ -10,6 +10,18 @@ export interface Note extends NotePosition {
   readonly duration: number
 }
 
+export interface NoteOffset {
+  readonly steps: number
+  readonly pitches: number
+}
+
+export interface NoteArea {
+  readonly fromStep: number
+  readonly toStep: number
+  readonly lowPitch: number
+  readonly highPitch: number
+}
+
 export interface Pattern {
   readonly id: string
   readonly steps: number

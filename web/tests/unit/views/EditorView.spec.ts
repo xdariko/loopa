@@ -31,9 +31,9 @@ describe('EditorView shortcuts', () => {
     press('KeyZ', { ctrlKey: true })
     expect(editor.selectedPattern?.notes).toHaveLength(1)
 
-    editor.selectNote(editor.selectedPattern?.notes[0]?.id ?? null)
+    editor.selectNote(editor.selectedPattern?.notes[0]?.id ?? '')
     press('Escape')
-    expect(editor.selectedNoteId).toBeNull()
+    expect(editor.selectedNoteIds).toEqual([])
 
     wrapper.unmount()
   })

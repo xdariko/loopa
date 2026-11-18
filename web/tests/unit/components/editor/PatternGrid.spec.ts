@@ -15,8 +15,22 @@ function pattern(...notes: Note[]): Pattern {
   return { id: 'pattern', steps: STEPS, notes }
 }
 
-function mountGrid(props: { pattern: Pattern; instrument: Instrument; selectedNoteId?: string }) {
-  return mount(PatternGrid, { props: { selectedNoteId: null, ...props } })
+async function shiftPress(
+  element: { readonly element: Element } | undefined,
+  init: PointerEventInit = {},
+) {
+  element?.element.dispatchEvent(
+    new PointerEvent('pointerdown', { bubbles: true, shiftKey: true, ...init }),
+  )
+  await nextTick()
+}
+
+function mountGrid(props: {
+  pattern: Pattern
+  instrument: Instrument
+  selectedNoteIds?: readonly string[]
+}) {
+  return mount(PatternGrid, { props: { selectedNoteIds: [], ...props } })
 }
 
 describe('PatternGrid', () => {
@@ -37,17 +51,24 @@ describe('PatternGrid', () => {
     expect(wrapper.emitted('add')).toEqual([[{ step: 3, pitch: C4 }]])
   })
 
-  it('places notes on the grid and selects a note on press', async () => {
-    const note: Note = { id: 'a', step: 2, pitch: C4, duration: 3 }
-    const wrapper = mountGrid({ pattern: pattern(note), instrument: LEAD, selectedNoteId: 'a' })
-    const element = wrapper.get('.pattern-grid__note')
+  it('places notes on the grid, selects on press and toggles with Shift', async () => {
+    const first: Note = { id: 'a', step: 2, pitch: C4, duration: 3 }
+    const second: Note = { id: 'b', step: 8, pitch: C4, duration: 1 }
+    const wrapper = mountGrid({
+      pattern: pattern(first, second),
+      instrument: LEAD,
+      selectedNoteIds: ['a'],
+    })
+    const [selected, other] = wrapper.findAll('.pattern-grid__note')
 
-    expect(element.classes()).toContain('pattern-grid__note--selected')
-    expect(element.attributes('style')).toContain('grid-column: 4 / span 3')
+    expect(selected?.classes()).toContain('pattern-grid__note--selected')
+    expect(selected?.attributes('style')).toContain('grid-column: 4 / span 3')
 
-    await element.trigger('pointerdown')
+    await other?.trigger('pointerdown')
+    await shiftPress(selected)
 
-    expect(wrapper.emitted('select')).toEqual([['a']])
+    expect(wrapper.emitted('select')).toEqual([['b']])
+    expect(wrapper.emitted('toggle')).toEqual([['a']])
   })
 
   describe('dragging', () => {
@@ -78,7 +99,51 @@ describe('PatternGrid', () => {
       await nextTick()
 
       expect(element.classes()).not.toContain('pattern-grid__note--dragging')
-      expect(wrapper.emitted('move')).toEqual([['a', { step: 3, pitch: C4 }]])
+      expect(wrapper.emitted('move')).toEqual([[['a'], { steps: 3, pitches: 0 }]])
+    })
+
+    it('drags every selected note together', async () => {
+      const first: Note = { id: 'a', step: 0, pitch: C4, duration: 1 }
+      const second: Note = { id: 'b', step: 4, pitch: C4 + 2, duration: 1 }
+      const wrapper = mountGrid({
+        pattern: pattern(first, second),
+        instrument: LEAD,
+        selectedNoteIds: ['a', 'b'],
+      })
+
+      await wrapper.get('[aria-label="C4, шаг 1"]').trigger('pointerdown')
+      window.dispatchEvent(new PointerEvent('pointerup', { clientX: CELL.width }))
+
+      expect(wrapper.emitted('select')).toBeUndefined()
+      expect(wrapper.emitted('move')).toEqual([[['a', 'b'], { steps: 1, pitches: 0 }]])
+    })
+
+    it('selects the notes inside a Shift-drawn area instead of adding a note', async () => {
+      const inside: Note = { id: 'a', step: 3, pitch: C4, duration: 1 }
+      const outside: Note = { id: 'b', step: 3, pitch: C4 + 1, duration: 1 }
+      const wrapper = mountGrid({ pattern: pattern(inside, outside), instrument: LEAD })
+      const cell = wrapper.get(`[data-step="2"][data-pitch="${C4}"]`)
+
+      await shiftPress(cell, { clientX: 5, clientY: 5 })
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 5 + CELL.width * 3, clientY: 5 + CELL.height }),
+      )
+      await nextTick()
+
+      expect(wrapper.find('[data-testid="selection-area"]').exists()).toBe(true)
+      expect(wrapper.get('[aria-label="C4, шаг 4"]').classes()).toContain(
+        'pattern-grid__note--selected',
+      )
+
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 5 + CELL.width * 3, clientY: 5 + CELL.height }),
+      )
+      cell.element.dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }))
+      await nextTick()
+
+      expect(wrapper.find('[data-testid="selection-area"]').exists()).toBe(false)
+      expect(wrapper.emitted('selectArea')).toEqual([[['a']]])
+      expect(wrapper.emitted('add')).toBeUndefined()
     })
 
     it('emits resize from the right edge handle without starting a move', async () => {
@@ -89,7 +154,7 @@ describe('PatternGrid', () => {
       window.dispatchEvent(new PointerEvent('pointerup', { clientX: CELL.width * 3 }))
 
       expect(wrapper.emitted('select')).toEqual([['a']])
-      expect(wrapper.emitted('resize')).toEqual([['a', 4]])
+      expect(wrapper.emitted('resize')).toEqual([[['a'], 3]])
       expect(wrapper.emitted('move')).toBeUndefined()
     })
   })

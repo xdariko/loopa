@@ -75,6 +75,13 @@
   background: var(--color-danger);
 }
 
+.pattern-grid__area {
+  z-index: 3;
+  pointer-events: none;
+  border: 1px dashed var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
 .pattern-grid__resize {
   position: absolute;
   top: 0;

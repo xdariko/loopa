@@ -25,29 +25,51 @@ describe('editor store', () => {
 
     expect(editor.addNote({ step: 0, pitch: C4 })).toBe(true)
     expect(editor.selectedPattern?.notes).toHaveLength(1)
-    expect(editor.selectedNote?.pitch).toBe(C4)
+    expect(editor.selectedNotes.map(({ pitch }) => pitch)).toEqual([C4])
     expect(editor.addNote({ step: 0, pitch: C4 })).toBe(false)
   })
 
-  it('moves, resizes and deletes notes with undo for each step', () => {
+  it('builds a selection with toggle and area and clears it', () => {
+    const editor = useEditorStore()
+    editor.addNote({ step: 0, pitch: C4 })
+    editor.addNote({ step: 2, pitch: C4 })
+    const [first, second] = editor.selectedPattern?.notes.map(({ id }) => id) ?? []
+
+    editor.toggleNoteSelection(first ?? '')
+    expect(editor.selectedNoteIds).toEqual([second, first])
+    editor.toggleNoteSelection(second ?? '')
+    expect(editor.selectedNoteIds).toEqual([first])
+    editor.addToSelection([first ?? '', second ?? ''])
+    expect(editor.selectedNoteIds).toEqual([first, second])
+
+    editor.clearSelection()
+    expect(editor.selectedNotes).toEqual([])
+  })
+
+  it('edits a group with one history entry per change', () => {
     const editor = useEditorStore()
     const projectStore = useProjectStore()
     editor.addNote({ step: 0, pitch: C4 })
-    const noteId = editor.selectedNoteId ?? ''
+    editor.addNote({ step: 2, pitch: C4 })
+    const ids = editor.selectedPattern?.notes.map(({ id }) => id) ?? []
+    editor.addToSelection(ids)
 
-    editor.moveNote(noteId, { step: 4, pitch: C4 + 1 })
-    editor.resizeNote(noteId, 3)
-    expect(editor.selectedNote).toMatchObject({ step: 4, pitch: C4 + 1, duration: 3 })
+    editor.moveNotes(ids, { steps: 4, pitches: 1 })
+    editor.resizeNotes(ids, 1)
+    expect(editor.selectedNotes).toMatchObject([
+      { step: 4, pitch: C4 + 1, duration: 2 },
+      { step: 6, pitch: C4 + 1, duration: 2 },
+    ])
 
-    editor.deleteSelectedNote()
+    editor.deleteSelectedNotes()
     expect(editor.selectedPattern?.notes).toHaveLength(0)
 
     projectStore.undo()
-    expect(editor.selectedPattern?.notes[0]).toMatchObject({ step: 4, duration: 3 })
     projectStore.undo()
-    expect(editor.selectedPattern?.notes[0]).toMatchObject({ step: 4, duration: 1 })
-    projectStore.undo()
-    expect(editor.selectedPattern?.notes[0]).toMatchObject({ step: 0, pitch: C4 })
+    expect(editor.selectedPattern?.notes).toMatchObject([
+      { step: 4, duration: 1 },
+      { step: 6, duration: 1 },
+    ])
   })
 
   it('adds a uniquely named track, selects it and falls back to the first track on undo', () => {
@@ -70,7 +92,7 @@ describe('editor store', () => {
 
     useProjectStore().load(createProject())
 
-    expect(editor.selectedNote).toBeNull()
-    expect(editor.deleteSelectedNote()).toBe(false)
+    expect(editor.selectedNotes).toEqual([])
+    expect(editor.deleteSelectedNotes()).toBe(false)
   })
 })

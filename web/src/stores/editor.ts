@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { createNote, createTrack, createTrackLane } from '@/domain/factories'
 import {
@@ -10,7 +10,7 @@ import {
 } from '@/domain/instruments'
 import * as notes from '@/domain/notes'
 import * as projects from '@/domain/project'
-import type { NotePosition, Pattern } from '@/domain/types'
+import type { NoteOffset, NotePosition, Pattern } from '@/domain/types'
 
 import { useProjectStore } from './project'
 
@@ -21,7 +21,7 @@ export const useEditorStore = defineStore('editor', () => {
 
   const selectedTrackId = ref<string | null>(null)
   const selectedPatternId = ref<string | null>(null)
-  const selectedNoteId = ref<string | null>(null)
+  const selectedNoteIds = shallowRef<readonly string[]>([])
 
   const selectedTrack = computed(() => {
     const { project } = projectStore
@@ -37,11 +37,9 @@ export const useEditorStore = defineStore('editor', () => {
     return chosen ?? patterns[0] ?? null
   })
 
-  const selectedNote = computed(() => {
-    if (!selectedPattern.value || !selectedNoteId.value) {
-      return null
-    }
-    return notes.findNote(selectedPattern.value, selectedNoteId.value) ?? null
+  const selectedNotes = computed(() => {
+    const ids = new Set(selectedNoteIds.value)
+    return selectedPattern.value?.notes.filter((note) => ids.has(note.id)) ?? []
   })
 
   function editSelectedPattern(edit: PatternEdit): boolean {
@@ -59,44 +57,56 @@ export const useEditorStore = defineStore('editor', () => {
   function selectTrack(trackId: string): void {
     selectedTrackId.value = trackId
     selectedPatternId.value = null
-    selectedNoteId.value = null
+    clearSelection()
   }
 
   function selectPattern(patternId: string): void {
     selectedPatternId.value = patternId
-    selectedNoteId.value = null
+    clearSelection()
   }
 
-  function selectNote(noteId: string | null): void {
-    selectedNoteId.value = noteId
+  function selectNote(noteId: string): void {
+    selectedNoteIds.value = [noteId]
+  }
+
+  function toggleNoteSelection(noteId: string): void {
+    const ids = selectedNoteIds.value
+    selectedNoteIds.value = ids.includes(noteId)
+      ? ids.filter((id) => id !== noteId)
+      : [...ids, noteId]
+  }
+
+  function addToSelection(noteIds: readonly string[]): void {
+    selectedNoteIds.value = [...new Set([...selectedNoteIds.value, ...noteIds])]
+  }
+
+  function clearSelection(): void {
+    selectedNoteIds.value = []
   }
 
   function addNote(position: NotePosition, duration?: number): boolean {
     const note = createNote(position, duration)
     const added = editSelectedPattern((pattern, range) => notes.addNote(pattern, note, range))
     if (added) {
-      selectedNoteId.value = note.id
+      selectNote(note.id)
     }
     return added
   }
 
-  function moveNote(noteId: string, position: NotePosition): boolean {
-    return editSelectedPattern((pattern, range) => notes.moveNote(pattern, noteId, position, range))
+  function moveNotes(noteIds: readonly string[], offset: NoteOffset): boolean {
+    return editSelectedPattern((pattern, range) => notes.moveNotes(pattern, noteIds, offset, range))
   }
 
-  function resizeNote(noteId: string, duration: number): boolean {
+  function resizeNotes(noteIds: readonly string[], durationChange: number): boolean {
     return editSelectedPattern((pattern, range) =>
-      notes.resizeNote(pattern, noteId, duration, range),
+      notes.resizeNotes(pattern, noteIds, durationChange, range),
     )
   }
 
-  function deleteSelectedNote(): boolean {
-    const noteId = selectedNoteId.value
-    if (!noteId) {
-      return false
-    }
-    selectedNoteId.value = null
-    return editSelectedPattern((pattern) => notes.removeNote(pattern, noteId))
+  function deleteSelectedNotes(): boolean {
+    const noteIds = selectedNoteIds.value
+    clearSelection()
+    return editSelectedPattern((pattern) => notes.removeNotes(pattern, noteIds))
   }
 
   function addTrack(instrument: Instrument): boolean {
@@ -120,17 +130,20 @@ export const useEditorStore = defineStore('editor', () => {
   return {
     selectedTrackId,
     selectedPatternId,
-    selectedNoteId,
+    selectedNoteIds,
     selectedTrack,
     selectedPattern,
-    selectedNote,
+    selectedNotes,
     selectTrack,
     selectPattern,
     selectNote,
+    toggleNoteSelection,
+    addToSelection,
+    clearSelection,
     addNote,
-    moveNote,
-    resizeNote,
-    deleteSelectedNote,
+    moveNotes,
+    resizeNotes,
+    deleteSelectedNotes,
     addTrack,
     removeTrack,
   }

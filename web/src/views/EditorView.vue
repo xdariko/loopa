@@ -16,11 +16,13 @@
           class="editor__pattern"
           :pattern="editor.selectedPattern"
           :instrument="editor.selectedTrack.instrument"
-          :selected-note-id="editor.selectedNoteId"
+          :selected-note-ids="editor.selectedNoteIds"
           @add="editor.addNote"
           @select="editor.selectNote"
-          @move="editor.moveNote"
-          @resize="editor.resizeNote"
+          @toggle="editor.toggleNoteSelection"
+          @select-area="editor.addToSelection"
+          @move="editor.moveNotes"
+          @resize="editor.resizeNotes"
         />
         <p v-else class="editor__placeholder">Добавьте дорожку, чтобы расставлять ноты</p>
       </div>
@@ -42,8 +44,8 @@ const editor = useEditorStore()
 const projectStore = useProjectStore()
 
 useKeyboardShortcuts([
-  { codes: ['Delete', 'Backspace'], handler: editor.deleteSelectedNote },
+  { codes: ['Delete', 'Backspace'], handler: editor.deleteSelectedNotes },
   { codes: ['KeyZ'], mod: true, handler: projectStore.undo },
-  { codes: ['Escape'], handler: () => editor.selectNote(null) },
+  { codes: ['Escape'], handler: editor.clearSelection },
 ])
 </script>

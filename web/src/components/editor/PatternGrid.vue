@@ -21,7 +21,8 @@
           :style="{ gridRow: row.line, gridColumn: stepColumn(step) }"
           :data-step="step"
           :data-pitch="row.pitch"
-          @click="emit('add', { step, pitch: row.pitch })"
+          @pointerdown="handleCellPointerDown($event, { step, pitch: row.pitch })"
+          @click="handleCellClick($event, { step, pitch: row.pitch })"
         />
       </template>
 
@@ -31,21 +32,28 @@
         type="button"
         class="pattern-grid__note"
         :class="{
-          'pattern-grid__note--selected': note.id === selectedNoteId,
+          'pattern-grid__note--selected': isHighlighted(note),
           'pattern-grid__note--dragging': isDragging(note),
           'pattern-grid__note--blocked': isDragging(note) && !previewFits,
         }"
         :style="notePlacement(displayed(note))"
         :aria-label="noteLabel(note)"
-        :aria-pressed="note.id === selectedNoteId"
-        @pointerdown="handleNotePointerDown($event, note)"
+        :aria-pressed="isSelected(note)"
+        @pointerdown="handleNotePointerDown($event, note, 'move')"
       >
         <span
           class="pattern-grid__resize"
           aria-hidden="true"
-          @pointerdown.stop="handleResizePointerDown($event, note)"
+          @pointerdown.stop="handleNotePointerDown($event, note, 'resize')"
         />
       </button>
+
+      <div
+        v-if="selectionArea"
+        class="pattern-grid__area"
+        :style="areaPlacement(selectionArea)"
+        data-testid="selection-area"
+      />
     </div>
   </div>
 </template>
@@ -53,7 +61,8 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 
-import { useNoteDrag, type GridCellSize } from '@/composables/useNoteDrag'
+import { useAreaSelection } from '@/composables/useAreaSelection'
+import { useNoteDrag, type GridCellSize, type NoteDragBounds } from '@/composables/useNoteDrag'
 import { STEPS_PER_BEAT } from '@/domain/constants'
 import {
   isSharpPitch,
@@ -62,22 +71,26 @@ import {
   pitchesFor,
   type Instrument,
 } from '@/domain/instruments'
-import { canPlaceNote } from '@/domain/notes'
-import type { Note, NotePosition, Pattern } from '@/domain/types'
+import { canPlaceNotes, notesInArea } from '@/domain/notes'
+import type { Note, NoteArea, NoteOffset, NotePosition, Pattern } from '@/domain/types'
 
 const LABEL_COLUMNS = 1
+
+type NoteGesture = 'move' | 'resize'
 
 const props = defineProps<{
   pattern: Pattern
   instrument: Instrument
-  selectedNoteId: string | null
+  selectedNoteIds: readonly string[]
 }>()
 
 const emit = defineEmits<{
   add: [position: NotePosition]
   select: [noteId: string]
-  move: [noteId: string, position: NotePosition]
-  resize: [noteId: string, duration: number]
+  toggle: [noteId: string]
+  selectArea: [noteIds: readonly string[]]
+  move: [noteIds: readonly string[], offset: NoteOffset]
+  resize: [noteIds: readonly string[], durationChange: number]
 }>()
 
 const viewport = useTemplateRef<HTMLElement>('viewport')
@@ -98,17 +111,45 @@ const rowLineByPitch = computed(() => new Map(rows.value.map((row) => [row.pitch
 
 const pitchRange = computed(() => pitchRangeFor(props.instrument))
 
+const selectedIds = computed(() => new Set(props.selectedNoteIds))
+
+function bounds(): NoteDragBounds {
+  return { steps: props.pattern.steps, range: pitchRange.value }
+}
+
 const drag = useNoteDrag({
-  bounds: () => ({ steps: props.pattern.steps, range: pitchRange.value }),
+  bounds,
   cellSize: measureCell,
   scrollContainer: () => viewport.value,
-  onMove: (noteId, position) => emit('move', noteId, position),
-  onResize: (noteId, duration) => emit('resize', noteId, duration),
+  onMove: (noteIds, offset) => emit('move', noteIds, offset),
+  onResize: (noteIds, durationChange) => emit('resize', noteIds, durationChange),
 })
+
+const selection = useAreaSelection({
+  bounds,
+  scrollContainer: () => viewport.value,
+  onSelect: (area) => {
+    const noteIds = notesInArea(props.pattern, area).map((note) => note.id)
+    if (noteIds.length > 0) {
+      emit('selectArea', noteIds)
+    }
+  },
+})
+
+const selectionArea = selection.area
+
+const previewById = computed(
+  () => new Map((drag.preview.value ?? []).map((note) => [note.id, note])),
+)
 
 const previewFits = computed(() => {
   const preview = drag.preview.value
-  return preview ? canPlaceNote(props.pattern, preview, pitchRange.value) : true
+  return preview ? canPlaceNotes(props.pattern, preview, pitchRange.value) : true
+})
+
+const areaNoteIds = computed(() => {
+  const area = selectionArea.value
+  return new Set(area ? notesInArea(props.pattern, area).map((note) => note.id) : [])
 })
 
 function measureCell(): GridCellSize | null {
@@ -120,23 +161,41 @@ function measureCell(): GridCellSize | null {
   return width > 0 && height > 0 ? { width, height } : null
 }
 
+function isSelected(note: Note): boolean {
+  return selectedIds.value.has(note.id)
+}
+
+function isHighlighted(note: Note): boolean {
+  return isSelected(note) || areaNoteIds.value.has(note.id)
+}
+
 function isDragging(note: Note): boolean {
-  return drag.preview.value?.id === note.id
+  return previewById.value.has(note.id)
 }
 
 function displayed(note: Note): Note {
-  const preview = drag.preview.value
-  return preview?.id === note.id ? preview : note
+  return previewById.value.get(note.id) ?? note
 }
 
 function stepColumn(step: number): number {
   return LABEL_COLUMNS + step + 1
 }
 
+function span(start: number | undefined, length: number): string {
+  return `${start} / span ${length}`
+}
+
 function notePlacement(note: Note) {
   return {
     gridRow: rowLineByPitch.value.get(note.pitch),
-    gridColumn: `${stepColumn(note.step)} / span ${note.duration}`,
+    gridColumn: span(stepColumn(note.step), note.duration),
+  }
+}
+
+function areaPlacement(area: NoteArea) {
+  return {
+    gridRow: span(rowLineByPitch.value.get(area.highPitch), area.highPitch - area.lowPitch + 1),
+    gridColumn: span(stepColumn(area.fromStep), area.toStep - area.fromStep + 1),
   }
 }
 
@@ -144,13 +203,37 @@ function noteLabel(note: Note): string {
   return `${pitchLabel(props.instrument, note.pitch)}, шаг ${note.step + 1}`
 }
 
-function handleNotePointerDown(event: PointerEvent, note: Note): void {
-  emit('select', note.id)
-  drag.startMove(event, note)
+function draggedGroup(note: Note): readonly Note[] {
+  if (!isSelected(note)) {
+    emit('select', note.id)
+    return [note]
+  }
+  return props.pattern.notes.filter(isSelected)
 }
 
-function handleResizePointerDown(event: PointerEvent, note: Note): void {
-  emit('select', note.id)
-  drag.startResize(event, note)
+function handleNotePointerDown(event: PointerEvent, note: Note, gesture: NoteGesture): void {
+  if (event.shiftKey) {
+    emit('toggle', note.id)
+    return
+  }
+  const group = draggedGroup(note)
+  if (gesture === 'resize') {
+    drag.startResize(event, group)
+  } else {
+    drag.startMove(event, group)
+  }
+}
+
+function handleCellPointerDown(event: PointerEvent, cell: NotePosition): void {
+  if (!event.shiftKey || !(event.currentTarget instanceof HTMLElement)) {
+    return
+  }
+  selection.start(event, cell, event.currentTarget.getBoundingClientRect())
+}
+
+function handleCellClick(event: MouseEvent, cell: NotePosition): void {
+  if (!event.shiftKey) {
+    emit('add', cell)
+  }
 }
 </script>
