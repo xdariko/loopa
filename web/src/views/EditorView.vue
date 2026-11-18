@@ -28,7 +28,16 @@ import TrackPanel from '@/components/editor/TrackPanel.vue'
 import TransportBar from '@/components/editor/TransportBar.vue'
 import PatternGrid from '@/components/editor/PatternGrid.vue'
 import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
+import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useEditorStore } from '@/stores/editor'
+import { useProjectStore } from '@/stores/project'
 
 const editor = useEditorStore()
+const projectStore = useProjectStore()
+
+useKeyboardShortcuts([
+  { codes: ['Delete', 'Backspace'], handler: editor.deleteSelectedNote },
+  { codes: ['KeyZ'], mod: true, handler: projectStore.undo },
+  { codes: ['Escape'], handler: () => editor.selectNote(null) },
+])
 </script>
