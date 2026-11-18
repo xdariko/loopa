@@ -10,23 +10,18 @@ describe('project store', () => {
     setActivePinia(createPinia())
   })
 
-  it('records a change and restores the previous project on undo', () => {
+  it('records only real changes and restores the previous project on undo', () => {
     const store = useProjectStore()
     const initial = store.project
 
+    expect(store.setBpm(DEFAULT_BPM)).toBe(false)
+    expect(store.canUndo).toBe(false)
     expect(store.setBpm(140)).toBe(true)
     expect(store.project.bpm).toBe(140)
     expect(store.canUndo).toBe(true)
 
     store.undo()
     expect(store.project).toBe(initial)
-    expect(store.canUndo).toBe(false)
-  })
-
-  it('does not record changes that leave the project untouched', () => {
-    const store = useProjectStore()
-
-    expect(store.setBpm(DEFAULT_BPM)).toBe(false)
     expect(store.canUndo).toBe(false)
   })
 

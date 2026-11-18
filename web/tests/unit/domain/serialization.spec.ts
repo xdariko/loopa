@@ -33,13 +33,10 @@ function withChange(change: (document: Record<string, unknown>) => void): unknow
 }
 
 describe('serializeProject', () => {
-  it('adds the format version', () => {
-    expect(serializeProject(createProject()).version).toBe(PROJECT_FORMAT_VERSION)
-  })
-
-  it('survives a JSON round trip unchanged', () => {
+  it('adds the format version and survives a JSON round trip unchanged', () => {
     const project = projectWithNote()
 
+    expect(serializeProject(project).version).toBe(PROJECT_FORMAT_VERSION)
     expect(parseProject(roundTrip(project))).toEqual(project)
   })
 })
@@ -53,7 +50,7 @@ describe('parseProject', () => {
     )
   })
 
-  it('reports the path of the invalid field', () => {
+  it('reports the path of an invalid field or setting', () => {
     const invalid = withChange((document) => {
       const tracks = document.tracks as Record<string, unknown>[]
       const firstTrack = tracks[0] as { instrument: Record<string, unknown> }
@@ -61,9 +58,6 @@ describe('parseProject', () => {
     })
 
     expect(() => parseProject(invalid)).toThrow(/at tracks\.0\.instrument\.preset/)
-  })
-
-  it('rejects out-of-range settings', () => {
     expect(() => parseProject(withChange((document) => (document.bpm = 1000)))).toThrow(/at bpm/)
     expect(() => parseProject(withChange((document) => (document.swing = -1)))).toThrow(/at swing/)
   })

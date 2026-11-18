@@ -1,6 +1,12 @@
 <template>
   <div class="editor">
-    <TrackPanel class="editor__tracks" />
+    <TrackPanel
+      class="editor__tracks"
+      :tracks="projectStore.project.tracks"
+      :selected-track-id="editor.selectedTrack?.id ?? null"
+      @select="editor.selectTrack"
+      @add="editor.addTrack"
+    />
 
     <section class="editor__workspace">
       <TransportBar />

@@ -25,10 +25,10 @@ export function createPattern(): Pattern {
   return { id: crypto.randomUUID(), steps: STEPS_PER_BAR, notes: [] }
 }
 
-export function createTrack(instrument: Instrument): Track {
+export function createTrack(instrument: Instrument, name = instrumentLabel(instrument)): Track {
   return {
     id: crypto.randomUUID(),
-    name: instrumentLabel(instrument),
+    name,
     instrument,
     volume: DEFAULT_TRACK_VOLUME,
     muted: false,
@@ -43,7 +43,7 @@ export function createTrackLane(track: Track, barCount: number): ArrangementLane
 }
 
 export function createProject(): Project {
-  const tracks = STARTER_INSTRUMENTS.map(createTrack)
+  const tracks = STARTER_INSTRUMENTS.map((instrument) => createTrack(instrument))
   return {
     title: DEFAULT_PROJECT_TITLE,
     bpm: DEFAULT_BPM,

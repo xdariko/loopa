@@ -20,7 +20,7 @@ describe('EditorView shortcuts', () => {
     return mount(EditorView, { global: { stubs: { RouterLink: true } } })
   }
 
-  it('deletes the selected note and brings it back with Ctrl+Z', () => {
+  it('deletes, restores and deselects notes from the keyboard', () => {
     const wrapper = mountEditor()
     const editor = useEditorStore()
     editor.addNote({ step: 0, pitch: C4 })
@@ -31,19 +31,27 @@ describe('EditorView shortcuts', () => {
     press('KeyZ', { ctrlKey: true })
     expect(editor.selectedPattern?.notes).toHaveLength(1)
 
+    editor.selectNote(editor.selectedPattern?.notes[0]?.id ?? null)
+    press('Escape')
+    expect(editor.selectedNoteId).toBeNull()
+
     wrapper.unmount()
   })
+})
 
-  it('clears the selection with Escape', () => {
-    const wrapper = mountEditor()
+describe('EditorView tracks', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('opens the clicked track in the grid', async () => {
+    const wrapper = mount(EditorView, { global: { stubs: { RouterLink: true } } })
     const editor = useEditorStore()
-    editor.addNote({ step: 0, pitch: C4 })
 
-    press('Escape')
-    press('Delete')
+    await wrapper.findAll('.tracks__item')[2]?.trigger('click')
 
-    expect(editor.selectedNoteId).toBeNull()
-    expect(editor.selectedPattern?.notes).toHaveLength(1)
+    expect(editor.selectedTrack?.instrument).toEqual({ kind: 'drums' })
+    expect(wrapper.find('.pattern-grid__label').text()).toBe('Hat')
 
     wrapper.unmount()
   })

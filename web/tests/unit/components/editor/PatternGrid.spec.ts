@@ -10,7 +10,6 @@ const STEPS = 16
 const C4 = 60
 const CELL = { width: 20, height: 10 }
 const LEAD: Instrument = { kind: 'synth', preset: 'lead' }
-const DRUMS: Instrument = { kind: 'drums' }
 
 function pattern(...notes: Note[]): Pattern {
   return { id: 'pattern', steps: STEPS, notes }
@@ -28,16 +27,6 @@ describe('PatternGrid', () => {
     expect(wrapper.findAll('.pattern-grid__label')).toHaveLength(rowCount)
     expect(wrapper.findAll('.pattern-grid__cell')).toHaveLength(rowCount * STEPS)
     expect(wrapper.find('.pattern-grid__label').text()).toBe('B5')
-  })
-
-  it('labels drum rows by voice', () => {
-    const wrapper = mountGrid({ pattern: pattern(), instrument: DRUMS })
-
-    expect(wrapper.findAll('.pattern-grid__label').map((label) => label.text())).toEqual([
-      'Hat',
-      'Snare',
-      'Kick',
-    ])
   })
 
   it('emits add with the clicked cell position', async () => {

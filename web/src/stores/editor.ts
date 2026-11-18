@@ -2,7 +2,12 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { createNote, createTrack, createTrackLane } from '@/domain/factories'
-import { pitchRangeFor, type Instrument, type PitchRange } from '@/domain/instruments'
+import {
+  instrumentLabel,
+  pitchRangeFor,
+  type Instrument,
+  type PitchRange,
+} from '@/domain/instruments'
 import * as notes from '@/domain/notes'
 import * as projects from '@/domain/project'
 import type { NotePosition, Pattern } from '@/domain/types'
@@ -95,8 +100,12 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   function addTrack(instrument: Instrument): boolean {
-    const track = createTrack(instrument)
-    const lane = createTrackLane(track, projectStore.project.arrangement.barCount)
+    const { project } = projectStore
+    const track = createTrack(
+      instrument,
+      projects.nextTrackName(project, instrumentLabel(instrument)),
+    )
+    const lane = createTrackLane(track, project.arrangement.barCount)
     const added = projectStore.change((project) => projects.addTrack(project, track, lane))
     if (added) {
       selectTrack(track.id)

@@ -19,6 +19,17 @@ export function findTrack(project: Project, trackId: string): Track | undefined 
   return project.tracks.find((track) => track.id === trackId)
 }
 
+const FIRST_NAME_SUFFIX = 2
+
+export function nextTrackName(project: Project, baseName: string): string {
+  const taken = new Set(project.tracks.map((track) => track.name))
+  let name = baseName
+  for (let suffix = FIRST_NAME_SUFFIX; taken.has(name); suffix += 1) {
+    name = `${baseName} ${suffix}`
+  }
+  return name
+}
+
 export function updateTrack(
   project: Project,
   trackId: string,

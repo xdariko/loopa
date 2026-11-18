@@ -69,3 +69,15 @@
   background: var(--color-surface-muted);
   color: var(--color-text);
 }
+
+.tracks__instruments {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--space-3);
+  list-style: none;
+}
+
+.tracks__instruments .tracks__action {
+  width: 100%;
+}

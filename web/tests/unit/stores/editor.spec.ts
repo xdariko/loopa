@@ -50,14 +50,14 @@ describe('editor store', () => {
     expect(editor.selectedPattern?.notes[0]).toMatchObject({ step: 0, pitch: C4 })
   })
 
-  it('adds a track, selects it and falls back to the first track after undo', () => {
+  it('adds a uniquely named track, selects it and falls back to the first track on undo', () => {
     const editor = useEditorStore()
     const projectStore = useProjectStore()
     const initialCount = projectStore.project.tracks.length
 
-    editor.addTrack({ kind: 'synth', preset: 'pad' })
+    editor.addTrack({ kind: 'synth', preset: 'lead' })
     expect(projectStore.project.tracks).toHaveLength(initialCount + 1)
-    expect(editor.selectedTrack?.name).toBe('Pad')
+    expect(editor.selectedTrack?.name).toBe('Lead 2')
 
     projectStore.undo()
     expect(projectStore.project.tracks).toHaveLength(initialCount)

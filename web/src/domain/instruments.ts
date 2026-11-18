@@ -9,6 +9,11 @@ export type Instrument =
   | { readonly kind: 'drums' }
   | { readonly kind: 'sample'; readonly sampleId: string | null }
 
+export const TRACK_INSTRUMENTS: readonly Instrument[] = [
+  ...SYNTH_PRESETS.map((preset): Instrument => ({ kind: 'synth', preset })),
+  { kind: 'drums' },
+]
+
 export interface PitchRange {
   readonly min: number
   readonly max: number

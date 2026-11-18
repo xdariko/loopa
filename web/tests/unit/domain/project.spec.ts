@@ -4,6 +4,7 @@ import { DEFAULT_BAR_COUNT, MAX_BPM, MAX_SWING, MIN_BPM } from '@/domain/constan
 import { createProject, createTrack, createTrackLane } from '@/domain/factories'
 import {
   addTrack,
+  nextTrackName,
   removeTrack,
   renameProject,
   setBpm,
@@ -85,6 +86,21 @@ describe('tracks', () => {
     expect(updated.tracks).not.toContain(track)
     expect(updated.arrangement.lanes[track.id]).toBeUndefined()
     expect(removeTrack(project, 'missing')).toBe(project)
+  })
+})
+
+describe('nextTrackName', () => {
+  it('keeps a free name and numbers taken ones from 2', () => {
+    const project = createProject()
+    const withSecondLead = addTrack(
+      project,
+      createTrack({ kind: 'synth', preset: 'lead' }, 'Lead 2'),
+      [],
+    )
+
+    expect(nextTrackName(project, 'Pad')).toBe('Pad')
+    expect(nextTrackName(project, 'Lead')).toBe('Lead 2')
+    expect(nextTrackName(withSecondLead, 'Lead')).toBe('Lead 3')
   })
 })
 
