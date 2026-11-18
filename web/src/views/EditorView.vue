@@ -6,6 +6,8 @@
       :selected-track-id="editor.selectedTrack?.id ?? null"
       @select="editor.selectTrack"
       @add="editor.addTrack"
+      @remove="editor.removeTrack"
+      @rename="editor.renameTrack"
     />
 
     <section class="editor__workspace">

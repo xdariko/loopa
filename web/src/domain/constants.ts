@@ -19,6 +19,8 @@ export const MAX_VOLUME = 1
 export const MIN_EFFECT_AMOUNT = 0
 export const MAX_EFFECT_AMOUNT = 1
 
+export const MAX_TRACK_NAME_LENGTH = 32
+
 export const DEFAULT_BAR_COUNT = 4
 export const MIN_NOTE_DURATION = 1
 

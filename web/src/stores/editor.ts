@@ -124,7 +124,25 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   function removeTrack(trackId: string): boolean {
-    return projectStore.change((project) => projects.removeTrack(project, trackId))
+    const wasSelected = selectedTrack.value?.id === trackId
+    const index = projectStore.project.tracks.findIndex((track) => track.id === trackId)
+    const removed = projectStore.change((project) => projects.removeTrack(project, trackId))
+    if (removed && wasSelected) {
+      const { tracks } = projectStore.project
+      const neighbour = tracks[index] ?? tracks[index - 1]
+      if (neighbour) {
+        selectTrack(neighbour.id)
+      } else {
+        selectedTrackId.value = null
+        selectedPatternId.value = null
+        clearSelection()
+      }
+    }
+    return removed
+  }
+
+  function renameTrack(trackId: string, name: string): boolean {
+    return projectStore.change((project) => projects.renameTrack(project, trackId, name))
   }
 
   return {
@@ -146,5 +164,6 @@ export const useEditorStore = defineStore('editor', () => {
     deleteSelectedNotes,
     addTrack,
     removeTrack,
+    renameTrack,
   }
 })

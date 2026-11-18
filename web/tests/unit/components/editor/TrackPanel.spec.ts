@@ -53,4 +53,30 @@ describe('TrackPanel', () => {
     expect(wrapper.emitted('add')).toEqual([[{ kind: 'synth', preset: 'pad' }]])
     expect(wrapper.find('.tracks__instruments').exists()).toBe(false)
   })
+
+  it('renames on double click, commits on Enter and cancels on Escape', async () => {
+    const wrapper = mountPanel()
+    const [lead, drums] = wrapper.findAll('.tracks__item')
+
+    await lead?.trigger('dblclick')
+    const input = wrapper.get('.tracks__name-input')
+    expect((input.element as HTMLInputElement).value).toBe('Lead')
+    await input.setValue('Melody')
+    await input.trigger('keydown', { key: 'Enter' })
+
+    await drums?.trigger('keydown', { key: 'F2' })
+    await wrapper.get('.tracks__name-input').setValue('Beat')
+    await wrapper.get('.tracks__name-input').trigger('keydown', { key: 'Escape' })
+
+    expect(wrapper.find('.tracks__name-input').exists()).toBe(false)
+    expect(wrapper.emitted('rename')).toEqual([[tracks[0]?.id, 'Melody']])
+  })
+
+  it('emits remove from the track delete button', async () => {
+    const wrapper = mountPanel()
+
+    await wrapper.get('[aria-label="Удалить дорожку Drums"]').trigger('click')
+
+    expect(wrapper.emitted('remove')).toEqual([[tracks[1]?.id]])
+  })
 })

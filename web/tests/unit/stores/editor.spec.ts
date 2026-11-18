@@ -86,6 +86,37 @@ describe('editor store', () => {
     expect(editor.selectedTrack).toBe(projectStore.project.tracks[0])
   })
 
+  it('moves the selection to a neighbour when the selected track is removed', () => {
+    const editor = useEditorStore()
+    const projectStore = useProjectStore()
+    const [lead, bass, drums] = projectStore.project.tracks.map(({ id }) => id)
+
+    editor.selectTrack(bass ?? '')
+    editor.removeTrack(bass ?? '')
+    expect(editor.selectedTrack?.id).toBe(drums)
+
+    editor.removeTrack(drums ?? '')
+    expect(editor.selectedTrack?.id).toBe(lead)
+
+    editor.removeTrack(lead ?? '')
+    expect(editor.selectedTrack).toBeNull()
+
+    projectStore.undo()
+    expect(editor.selectedTrack?.id).toBe(lead)
+  })
+
+  it('renames a track with an undoable change', () => {
+    const editor = useEditorStore()
+    const projectStore = useProjectStore()
+    const trackId = editor.selectedTrack?.id ?? ''
+
+    expect(editor.renameTrack(trackId, 'Melody')).toBe(true)
+    expect(editor.selectedTrack?.name).toBe('Melody')
+
+    projectStore.undo()
+    expect(editor.selectedTrack?.name).toBe('Lead')
+  })
+
   it('drops a stale note selection after another project is loaded', () => {
     const editor = useEditorStore()
     editor.addNote({ step: 0, pitch: C4 })

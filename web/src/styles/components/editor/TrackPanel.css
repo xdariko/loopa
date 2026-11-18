@@ -22,14 +22,59 @@
   list-style: none;
 }
 
+.tracks__row {
+  display: flex;
+  align-items: center;
+}
+
 .tracks__item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: var(--space-2);
   border-radius: var(--radius-sm);
   text-align: left;
+}
+
+.tracks__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tracks__name-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.tracks__remove {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  opacity: 0;
+}
+
+.tracks__row:hover .tracks__remove,
+.tracks__remove:focus-visible,
+.tracks__item--active + .tracks__remove {
+  opacity: 1;
+}
+
+.tracks__remove:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-danger);
+}
+
+.tracks__name-input + .tracks__remove {
+  display: none;
 }
 
 .tracks__item:hover {

@@ -1,4 +1,4 @@
-import { MAX_BPM, MAX_SWING, MIN_BPM, MIN_SWING } from './constants'
+import { MAX_BPM, MAX_SWING, MAX_TRACK_NAME_LENGTH, MIN_BPM, MIN_SWING } from './constants'
 import { clamp } from './numbers'
 import type { ArrangementLane, Pattern, Project, Track } from './types'
 
@@ -73,6 +73,16 @@ export function removeTrack(project: Project, trackId: string): Project {
     tracks: project.tracks.filter((track) => track.id !== trackId),
     arrangement: { ...project.arrangement, lanes },
   }
+}
+
+export function renameTrack(project: Project, trackId: string, name: string): Project {
+  const next = name.trim().slice(0, MAX_TRACK_NAME_LENGTH)
+  if (!next) {
+    return project
+  }
+  return updateTrack(project, trackId, (track) =>
+    next === track.name ? track : { ...track, name: next },
+  )
 }
 
 export function setBpm(project: Project, bpm: number): Project {

@@ -4,6 +4,7 @@ import {
   MAX_BPM,
   MAX_EFFECT_AMOUNT,
   MAX_SWING,
+  MAX_TRACK_NAME_LENGTH,
   MAX_VOLUME,
   MIN_BPM,
   MIN_EFFECT_AMOUNT,
@@ -85,7 +86,7 @@ const InstrumentSchema = v.variant('kind', [
 const TrackSchema = v.pipe(
   v.object({
     id: v.string(),
-    name: v.string(),
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(MAX_TRACK_NAME_LENGTH)),
     instrument: InstrumentSchema,
     volume: numberBetween(MIN_VOLUME, MAX_VOLUME),
     muted: v.boolean(),

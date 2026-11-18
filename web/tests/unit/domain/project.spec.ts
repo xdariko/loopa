@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_BAR_COUNT, MAX_BPM, MAX_SWING, MIN_BPM } from '@/domain/constants'
+import {
+  DEFAULT_BAR_COUNT,
+  MAX_BPM,
+  MAX_SWING,
+  MAX_TRACK_NAME_LENGTH,
+  MIN_BPM,
+} from '@/domain/constants'
 import { createProject, createTrack, createTrackLane } from '@/domain/factories'
 import {
   addTrack,
   nextTrackName,
   removeTrack,
   renameProject,
+  renameTrack,
   setBpm,
   setSwing,
   updatePattern,
@@ -86,6 +93,20 @@ describe('tracks', () => {
     expect(updated.tracks).not.toContain(track)
     expect(updated.arrangement.lanes[track.id]).toBeUndefined()
     expect(removeTrack(project, 'missing')).toBe(project)
+  })
+})
+
+describe('renameTrack', () => {
+  it('trims and limits the name and ignores blank or unchanged names', () => {
+    const project = createProject()
+    const { id, name } = firstTrack(project)
+
+    expect(renameTrack(project, id, '  Melody  ').tracks[0]?.name).toBe('Melody')
+    expect(renameTrack(project, id, 'x'.repeat(100)).tracks[0]?.name).toHaveLength(
+      MAX_TRACK_NAME_LENGTH,
+    )
+    expect(renameTrack(project, id, '   ')).toBe(project)
+    expect(renameTrack(project, id, name)).toBe(project)
   })
 })
 
