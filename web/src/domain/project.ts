@@ -1,9 +1,6 @@
 import { MAX_BPM, MAX_SWING, MIN_BPM, MIN_SWING } from './constants'
+import { clamp } from './numbers'
 import type { ArrangementLane, Pattern, Project, Track } from './types'
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
 
 function replaceById<T extends { readonly id: string }>(
   items: readonly T[],

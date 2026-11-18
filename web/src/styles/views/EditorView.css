@@ -17,12 +17,19 @@
 
 .editor__grid {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   margin: 0 var(--space-4);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+}
+
+.editor__pattern {
+  flex: 1;
+  min-height: 0;
 }
 
 .editor__placeholder {

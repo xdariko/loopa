@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 
 import PatternGrid from '@/components/editor/PatternGrid.vue'
 import { MELODIC_PITCH_RANGE, type Instrument } from '@/domain/instruments'
@@ -7,6 +8,7 @@ import type { Note, Pattern } from '@/domain/types'
 
 const STEPS = 16
 const C4 = 60
+const CELL = { width: 20, height: 10 }
 const LEAD: Instrument = { kind: 'synth', preset: 'lead' }
 const DRUMS: Instrument = { kind: 'drums' }
 
@@ -46,7 +48,7 @@ describe('PatternGrid', () => {
     expect(wrapper.emitted('add')).toEqual([[{ step: 3, pitch: C4 }]])
   })
 
-  it('places notes on the grid and emits select on click', async () => {
+  it('places notes on the grid and selects a note on press', async () => {
     const note: Note = { id: 'a', step: 2, pitch: C4, duration: 3 }
     const wrapper = mountGrid({ pattern: pattern(note), instrument: LEAD, selectedNoteId: 'a' })
     const element = wrapper.get('.pattern-grid__note')
@@ -54,8 +56,52 @@ describe('PatternGrid', () => {
     expect(element.classes()).toContain('pattern-grid__note--selected')
     expect(element.attributes('style')).toContain('grid-column: 4 / span 3')
 
-    await element.trigger('click')
+    await element.trigger('pointerdown')
 
     expect(wrapper.emitted('select')).toEqual([['a']])
+  })
+
+  describe('dragging', () => {
+    beforeEach(() => {
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+        DOMRect.fromRect(CELL),
+      )
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('previews the move, marks a blocked spot and emits move on release', async () => {
+      const dragged: Note = { id: 'a', step: 0, pitch: C4, duration: 1 }
+      const other: Note = { id: 'b', step: 2, pitch: C4, duration: 1 }
+      const wrapper = mountGrid({ pattern: pattern(dragged, other), instrument: LEAD })
+      const element = wrapper.get('[aria-label="C4, шаг 1"]')
+
+      await element.trigger('pointerdown')
+      window.dispatchEvent(new PointerEvent('pointermove', { clientX: CELL.width * 2 }))
+      await nextTick()
+
+      expect(element.attributes('style')).toContain('grid-column: 4 / span 1')
+      expect(element.classes()).toContain('pattern-grid__note--blocked')
+
+      window.dispatchEvent(new PointerEvent('pointerup', { clientX: CELL.width * 3 }))
+      await nextTick()
+
+      expect(element.classes()).not.toContain('pattern-grid__note--dragging')
+      expect(wrapper.emitted('move')).toEqual([['a', { step: 3, pitch: C4 }]])
+    })
+
+    it('emits resize from the right edge handle without starting a move', async () => {
+      const note: Note = { id: 'a', step: 0, pitch: C4, duration: 1 }
+      const wrapper = mountGrid({ pattern: pattern(note), instrument: LEAD })
+
+      await wrapper.get('.pattern-grid__resize').trigger('pointerdown')
+      window.dispatchEvent(new PointerEvent('pointerup', { clientX: CELL.width * 3 }))
+
+      expect(wrapper.emitted('select')).toEqual([['a']])
+      expect(wrapper.emitted('resize')).toEqual([['a', 4]])
+      expect(wrapper.emitted('move')).toBeUndefined()
+    })
   })
 })

@@ -7,11 +7,14 @@
       <div class="editor__grid" data-testid="grid-area">
         <PatternGrid
           v-if="editor.selectedTrack && editor.selectedPattern"
+          class="editor__pattern"
           :pattern="editor.selectedPattern"
           :instrument="editor.selectedTrack.instrument"
           :selected-note-id="editor.selectedNoteId"
           @add="editor.addNote"
           @select="editor.selectNote"
+          @move="editor.moveNote"
+          @resize="editor.resizeNote"
         />
         <p v-else class="editor__placeholder">Добавьте дорожку, чтобы расставлять ноты</p>
       </div>

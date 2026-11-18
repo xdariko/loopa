@@ -1,8 +1,13 @@
 .pattern-grid {
+  overflow: auto;
+}
+
+.pattern-grid__body {
   display: grid;
   grid-template-columns: var(--grid-label-width) repeat(var(--pattern-steps), minmax(0, 1fr));
   grid-auto-rows: var(--grid-row-height);
   min-width: 0;
+  user-select: none;
 }
 
 .pattern-grid__label {
@@ -42,8 +47,11 @@
 }
 
 .pattern-grid__note {
+  position: relative;
   z-index: 1;
   margin: 1px;
+  cursor: grab;
+  touch-action: none;
   border-radius: var(--radius-sm);
   background: var(--color-accent);
   opacity: 0.85;
@@ -56,4 +64,22 @@
 .pattern-grid__note--selected {
   opacity: 1;
   box-shadow: 0 0 0 2px var(--color-text);
+}
+
+.pattern-grid__note--dragging {
+  z-index: 2;
+  cursor: grabbing;
+}
+
+.pattern-grid__note--blocked {
+  background: var(--color-danger);
+}
+
+.pattern-grid__resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--grid-resize-handle-width);
+  cursor: ew-resize;
 }
