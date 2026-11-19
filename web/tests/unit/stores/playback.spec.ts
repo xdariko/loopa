@@ -10,6 +10,7 @@ import { usePlaybackStore } from '@/stores/playback'
 
 const engine = vi.hoisted(() => ({
   currentTime: 0,
+  audibleTime: 0,
   resume: vi.fn<AudioEngine['resume']>(() => Promise.resolve()),
   syncTracks: vi.fn<AudioEngine['syncTracks']>(),
   setDelayTime: vi.fn<AudioEngine['setDelayTime']>(),
@@ -47,6 +48,24 @@ describe('playback store', () => {
       time: START_DELAY_SECONDS,
       duration: stepDuration(DEFAULT_BPM) * 2,
     })
+  })
+
+  it('reports the playing note and position at the audible time', async () => {
+    const editor = useEditorStore()
+    editor.addNote({ step: 0, pitch: C4 }, 2)
+    const playback = usePlaybackStore()
+    await playback.play()
+    const noteId = editor.selectedPattern?.notes[0]?.id
+
+    engine.audibleTime = START_DELAY_SECONDS + stepDuration(DEFAULT_BPM) / 2
+    const snapshot = playback.sample()
+
+    expect(snapshot.position).toBeCloseTo(0.5)
+    expect([...snapshot.soundingNoteIds]).toEqual([noteId])
+
+    playback.pause()
+    expect(playback.sample().position).toBeNull()
+    engine.audibleTime = 0
   })
 
   it('keeps the engine in sync with the project and silences it on pause', async () => {

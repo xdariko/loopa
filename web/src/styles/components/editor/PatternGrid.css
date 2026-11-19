@@ -66,6 +66,18 @@
   box-shadow: 0 0 0 2px var(--color-text);
 }
 
+.pattern-grid__note--playing {
+  opacity: 1;
+  background: var(--color-note-playing);
+  box-shadow: 0 0 var(--note-glow-radius) var(--color-note-glow);
+}
+
+.pattern-grid__note--selected.pattern-grid__note--playing {
+  box-shadow:
+    0 0 0 2px var(--color-text),
+    0 0 var(--note-glow-radius) var(--color-note-glow);
+}
+
 .pattern-grid__note--dragging {
   z-index: 2;
   cursor: grabbing;

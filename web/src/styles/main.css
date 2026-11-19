@@ -6,6 +6,7 @@
 @import './components/editor/TrackPanel.css';
 @import './components/editor/TransportBar.css';
 @import './components/editor/PatternGrid.css';
+@import './components/editor/PatternPlayhead.css';
 @import './components/editor/ArrangementPanel.css';
 
 @import './views/EditorView.css';

@@ -25,6 +25,15 @@ export class AudioEngine {
     return this.graph?.context.currentTime ?? 0
   }
 
+  get audibleTime(): number {
+    const context = this.graph?.context
+    if (!context) {
+      return 0
+    }
+    const latency = (context.baseLatency ?? 0) + (context.outputLatency ?? 0)
+    return context.currentTime - latency
+  }
+
   async resume(): Promise<void> {
     const graph = this.ensureGraph()
     await graph.context.resume()

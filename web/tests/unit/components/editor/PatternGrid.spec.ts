@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, shallowRef } from 'vue'
 
 import PatternGrid from '@/components/editor/PatternGrid.vue'
+import { providePlaybackCursor } from '@/composables/usePlaybackCursor'
 import { MELODIC_PITCH_RANGE, type Instrument } from '@/domain/instruments'
 import type { Note, Pattern } from '@/domain/types'
 
@@ -157,5 +158,41 @@ describe('PatternGrid', () => {
       expect(wrapper.emitted('resize')).toEqual([[['a'], 3]])
       expect(wrapper.emitted('move')).toBeUndefined()
     })
+  })
+
+  it('lights up the playing notes', () => {
+    const first: Note = { id: 'a', step: 0, pitch: C4, duration: 1 }
+    const second: Note = { id: 'b', step: 4, pitch: C4, duration: 1 }
+    const wrapper = mount(PatternGrid, {
+      props: {
+        pattern: pattern(first, second),
+        instrument: LEAD,
+        selectedNoteIds: [],
+        playingNoteIds: new Set(['b']),
+      },
+    })
+
+    const notes = wrapper.findAll('.pattern-grid__note')
+    expect(notes[0]?.classes()).not.toContain('pattern-grid__note--playing')
+    expect(notes[1]?.classes()).toContain('pattern-grid__note--playing')
+  })
+
+  it('shows the playhead at the provided playback position', async () => {
+    const position = shallowRef<number | null>(null)
+    const Host = defineComponent({
+      setup() {
+        providePlaybackCursor({ position, playingNoteIds: shallowRef(new Set()) })
+        return () => h(PatternGrid, { pattern: pattern(), instrument: LEAD, selectedNoteIds: [] })
+      },
+    })
+    const wrapper = mount(Host)
+
+    expect(wrapper.find('[data-testid="playhead"]').exists()).toBe(false)
+
+    position.value = 4
+    await nextTick()
+
+    const line = wrapper.get('.playhead__line').element as HTMLElement
+    expect(line.style.getPropertyValue('--playhead-progress')).toBe(String(4 / STEPS))
   })
 })

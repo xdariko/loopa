@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 
 import { getAudioEngine } from '@/audio/engine'
 import { createScheduler, stepDuration, type ScheduledStep } from '@/audio/scheduler'
+import { PlaybackTimeline, type TimelineSnapshot } from '@/audio/timeline'
 import { STEPS_PER_BAR } from '@/domain/constants'
 import { notesStartingAt } from '@/domain/notes'
 
@@ -17,6 +18,7 @@ export const usePlaybackStore = defineStore('playback', () => {
   const engine = getAudioEngine()
 
   const isPlaying = ref(false)
+  const timeline = new PlaybackTimeline()
 
   const scheduler = createScheduler({
     now: () => engine.currentTime,
@@ -25,15 +27,23 @@ export const usePlaybackStore = defineStore('playback', () => {
     onStep: playStep,
   })
 
-  function playStep({ step, time, stepDuration: duration }: ScheduledStep): void {
+  function playStep(scheduled: ScheduledStep): void {
+    timeline.addStep(scheduled)
     const track = editor.selectedTrack
     const pattern = editor.selectedPattern
     if (!track || !pattern) {
       return
     }
-    notesStartingAt(pattern, step).forEach((note) =>
-      engine.playNote(track.id, { pitch: note.pitch, time, duration: note.duration * duration }),
-    )
+    const { step, time, stepDuration: duration } = scheduled
+    notesStartingAt(pattern, step).forEach((note) => {
+      const noteDuration = note.duration * duration
+      engine.playNote(track.id, { pitch: note.pitch, time, duration: noteDuration })
+      timeline.addNote({ id: note.id, start: time, end: time + noteDuration })
+    })
+  }
+
+  function sample(): TimelineSnapshot {
+    return timeline.advanceTo(engine.audibleTime)
   }
 
   watch(
@@ -63,6 +73,7 @@ export const usePlaybackStore = defineStore('playback', () => {
     isPlaying.value = false
     scheduler.stop()
     engine.stopAll()
+    timeline.clear()
   }
 
   async function toggle(): Promise<void> {
@@ -73,5 +84,5 @@ export const usePlaybackStore = defineStore('playback', () => {
     }
   }
 
-  return { isPlaying, play, pause, toggle }
+  return { isPlaying, play, pause, toggle, sample }
 })

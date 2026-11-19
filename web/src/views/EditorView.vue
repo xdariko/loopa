@@ -24,6 +24,7 @@
           :pattern="editor.selectedPattern"
           :instrument="editor.selectedTrack.instrument"
           :selected-note-ids="editor.selectedNoteIds"
+          :playing-note-ids="playingNoteIds"
           @add="editor.addNote"
           @select="editor.selectNote"
           @toggle="editor.toggleNoteSelection"
@@ -46,6 +47,7 @@ import TransportBar from '@/components/editor/TransportBar.vue'
 import PatternGrid from '@/components/editor/PatternGrid.vue'
 import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { providePlaybackCursor, usePlaybackCursor } from '@/composables/usePlaybackCursor'
 import { useEditorStore } from '@/stores/editor'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectStore } from '@/stores/project'
@@ -53,6 +55,10 @@ import { useProjectStore } from '@/stores/project'
 const editor = useEditorStore()
 const projectStore = useProjectStore()
 const playback = usePlaybackStore()
+
+const cursor = usePlaybackCursor({ active: () => playback.isPlaying, sample: playback.sample })
+const { playingNoteIds } = cursor
+providePlaybackCursor(cursor)
 
 onBeforeUnmount(playback.pause)
 

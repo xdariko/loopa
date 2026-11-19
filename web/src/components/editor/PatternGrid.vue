@@ -33,6 +33,7 @@
         class="pattern-grid__note"
         :class="{
           'pattern-grid__note--selected': isHighlighted(note),
+          'pattern-grid__note--playing': isPlaying(note),
           'pattern-grid__note--dragging': isDragging(note),
           'pattern-grid__note--blocked': isDragging(note) && !previewFits,
         }"
@@ -48,6 +49,8 @@
         />
       </button>
 
+      <PatternPlayhead :steps="pattern.steps" :style="playheadPlacement" />
+
       <div
         v-if="selectionArea"
         class="pattern-grid__area"
@@ -61,6 +64,7 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 
+import PatternPlayhead from '@/components/editor/PatternPlayhead.vue'
 import { useAreaSelection } from '@/composables/useAreaSelection'
 import { useNoteDrag, type GridCellSize, type NoteDragBounds } from '@/composables/useNoteDrag'
 import { STEPS_PER_BEAT } from '@/domain/constants'
@@ -82,6 +86,7 @@ const props = defineProps<{
   pattern: Pattern
   instrument: Instrument
   selectedNoteIds: readonly string[]
+  playingNoteIds?: ReadonlySet<string>
 }>()
 
 const emit = defineEmits<{
@@ -169,6 +174,10 @@ function isHighlighted(note: Note): boolean {
   return isSelected(note) || areaNoteIds.value.has(note.id)
 }
 
+function isPlaying(note: Note): boolean {
+  return props.playingNoteIds?.has(note.id) ?? false
+}
+
 function isDragging(note: Note): boolean {
   return previewById.value.has(note.id)
 }
@@ -191,6 +200,11 @@ function notePlacement(note: Note) {
     gridColumn: span(stepColumn(note.step), note.duration),
   }
 }
+
+const playheadPlacement = computed(() => ({
+  gridRow: span(1, rows.value.length),
+  gridColumn: span(stepColumn(0), props.pattern.steps),
+}))
 
 function areaPlacement(area: NoteArea) {
   return {
