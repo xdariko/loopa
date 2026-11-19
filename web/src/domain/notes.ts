@@ -108,6 +108,10 @@ export function removeNotes(pattern: Pattern, noteIds: readonly string[]): Patte
   return notes.length === pattern.notes.length ? pattern : { ...pattern, notes }
 }
 
+export function notesStartingAt(pattern: Pattern, step: number): readonly Note[] {
+  return pattern.notes.filter((note) => note.step === step)
+}
+
 export function notesInArea(pattern: Pattern, area: NoteArea): readonly Note[] {
   return pattern.notes.filter(
     (note) =>

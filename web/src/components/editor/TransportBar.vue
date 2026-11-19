@@ -5,14 +5,21 @@
       class="transport__play"
       :class="{ 'transport__play--active': isPlaying }"
       :aria-label="isPlaying ? 'Пауза' : 'Воспроизвести'"
-      @click="isPlaying = !isPlaying"
+      @click="emit('toggle')"
     >
       {{ isPlaying ? '❚❚' : '▶' }}
     </button>
 
     <label class="transport__field">
       <span class="transport__label">BPM</span>
-      <input v-model.number="bpm" class="transport__input" type="number" min="40" max="240" />
+      <input
+        class="transport__input"
+        type="number"
+        :value="bpm"
+        :min="MIN_BPM"
+        :max="MAX_BPM"
+        @change="handleBpmChange"
+      />
     </label>
 
     <label class="transport__field">
@@ -27,8 +34,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick } from 'vue'
 
-const isPlaying = ref(false)
-const bpm = ref(120)
+import { MAX_BPM, MIN_BPM } from '@/domain/constants'
+
+const props = defineProps<{
+  isPlaying: boolean
+  bpm: number
+}>()
+
+const emit = defineEmits<{
+  toggle: []
+  bpmChange: [bpm: number]
+}>()
+
+async function handleBpmChange(event: Event): Promise<void> {
+  if (!(event.target instanceof HTMLInputElement)) {
+    return
+  }
+  const input = event.target
+  if (Number.isFinite(input.valueAsNumber)) {
+    emit('bpmChange', input.valueAsNumber)
+  }
+  await nextTick()
+  input.value = String(props.bpm)
+}
 </script>
