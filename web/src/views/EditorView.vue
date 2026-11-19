@@ -39,12 +39,12 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount } from 'vue'
+
 import TrackPanel from '@/components/editor/TrackPanel.vue'
 import TransportBar from '@/components/editor/TransportBar.vue'
 import PatternGrid from '@/components/editor/PatternGrid.vue'
 import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
-import { onBeforeUnmount } from 'vue'
-
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { useEditorStore } from '@/stores/editor'
 import { usePlaybackStore } from '@/stores/playback'
@@ -58,7 +58,8 @@ onBeforeUnmount(playback.pause)
 
 useKeyboardShortcuts([
   { codes: ['Delete', 'Backspace'], handler: editor.deleteSelectedNotes },
-  { codes: ['KeyZ'], mod: true, handler: projectStore.undo },
+  { codes: ['KeyZ'], mod: true, repeat: true, handler: projectStore.undo },
   { codes: ['Escape'], handler: editor.clearSelection },
+  { codes: ['Space'], handler: playback.toggle },
 ])
 </script>

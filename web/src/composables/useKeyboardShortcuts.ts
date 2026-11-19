@@ -4,6 +4,7 @@ export interface KeyboardShortcut {
   readonly codes: readonly string[]
   readonly mod?: boolean
   readonly shift?: boolean
+  readonly repeat?: boolean
   readonly handler: () => void
 }
 
@@ -25,18 +26,39 @@ function matches(shortcut: KeyboardShortcut, event: KeyboardEvent): boolean {
 }
 
 export function useKeyboardShortcuts(shortcuts: readonly KeyboardShortcut[]): void {
-  function handleKeydown(event: KeyboardEvent): void {
+  const consumedCodes = new Set<string>()
+
+  function findShortcut(event: KeyboardEvent): KeyboardShortcut | undefined {
     if (event.defaultPrevented || event.isComposing || isEditableTarget(event.target)) {
-      return
+      return undefined
     }
-    const shortcut = shortcuts.find((candidate) => matches(candidate, event))
+    return shortcuts.find((candidate) => matches(candidate, event))
+  }
+
+  function handleKeydown(event: KeyboardEvent): void {
+    const shortcut = findShortcut(event)
     if (!shortcut) {
+      consumedCodes.delete(event.code)
       return
     }
     event.preventDefault()
+    consumedCodes.add(event.code)
+    if (event.repeat && !shortcut.repeat) {
+      return
+    }
     shortcut.handler()
   }
 
+  function handleKeyup(event: KeyboardEvent): void {
+    if (consumedCodes.delete(event.code)) {
+      event.preventDefault()
+    }
+  }
+
   window.addEventListener('keydown', handleKeydown)
-  onScopeDispose(() => window.removeEventListener('keydown', handleKeydown))
+  window.addEventListener('keyup', handleKeyup)
+  onScopeDispose(() => {
+    window.removeEventListener('keydown', handleKeydown)
+    window.removeEventListener('keyup', handleKeyup)
+  })
 }
