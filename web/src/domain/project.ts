@@ -51,6 +51,13 @@ export function updatePattern(
   })
 }
 
+export function addPattern(project: Project, trackId: string, pattern: Pattern): Project {
+  return updateTrack(project, trackId, (track) => ({
+    ...track,
+    patterns: [...track.patterns, pattern],
+  }))
+}
+
 export function addTrack(project: Project, track: Track, lane: ArrangementLane): Project {
   return {
     ...project,

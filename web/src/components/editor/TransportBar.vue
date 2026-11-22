@@ -22,18 +22,43 @@
       />
     </label>
 
-    <label class="transport__field">
+    <label v-if="patterns" class="transport__field">
       <span class="transport__label">Паттерн</span>
-      <select class="transport__input">
-        <option>1</option>
+      <select
+        class="transport__input"
+        :value="selectedPatternId"
+        :disabled="!patterns.length"
+        @change="emit('selectPattern', ($event.target as HTMLSelectElement).value)"
+      >
+        <option v-for="(pattern, index) in patterns" :key="pattern.id" :value="pattern.id">
+          {{ index + 1 }}
+        </option>
       </select>
     </label>
+
+    <div v-if="patterns" class="transport__actions">
+      <button
+        type="button"
+        class="transport__action"
+        @keydown.space.stop
+        @click="emit('createPattern')"
+      >
+        Новый
+      </button>
+      <button
+        type="button"
+        class="transport__action"
+        :disabled="!selectedPatternId"
+        @keydown.space.stop
+        @click="emit('duplicatePattern')"
+      >
+        Дублировать
+      </button>
+    </div>
 
     <div class="transport__display">
       <slot />
     </div>
-
-    <button type="button" class="transport__menu" aria-label="Действия с паттерном">⋯</button>
   </div>
 </template>
 
@@ -41,15 +66,21 @@
 import { nextTick } from 'vue'
 
 import { MAX_BPM, MIN_BPM } from '@/domain/constants'
+import type { Pattern } from '@/domain/types'
 
 const props = defineProps<{
   isPlaying: boolean
   bpm: number
+  patterns?: readonly Pattern[]
+  selectedPatternId?: string
 }>()
 
 const emit = defineEmits<{
   toggle: []
   bpmChange: [bpm: number]
+  selectPattern: [patternId: string]
+  createPattern: []
+  duplicatePattern: []
 }>()
 
 async function handleBpmChange(event: Event): Promise<void> {

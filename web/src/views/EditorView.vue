@@ -14,14 +14,20 @@
       <TransportBar
         :is-playing="playback.isPlaying"
         :bpm="projectStore.project.bpm"
+        :patterns="editor.selectedTrack?.patterns"
+        :selected-pattern-id="editor.selectedPattern?.id"
         @toggle="playback.toggle"
         @bpm-change="projectStore.setBpm"
+        @select-pattern="editor.selectPattern"
+        @create-pattern="editor.createSelectedTrackPattern"
+        @duplicate-pattern="editor.duplicateSelectedPattern"
       >
         <SpectrumView :playing="playback.isPlaying" :source="playback.spectrum" />
       </TransportBar>
       <div class="editor__grid" data-testid="grid-area">
         <PatternGrid
           v-if="editor.selectedTrack && editor.selectedPattern"
+          :key="editor.selectedPattern.id"
           class="editor__pattern"
           :pattern="editor.selectedPattern"
           :instrument="editor.selectedTrack.instrument"

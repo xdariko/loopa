@@ -25,6 +25,14 @@ export function createPattern(): Pattern {
   return { id: crypto.randomUUID(), steps: STEPS_PER_BAR, notes: [] }
 }
 
+export function duplicatePattern(pattern: Pattern): Pattern {
+  return {
+    id: crypto.randomUUID(),
+    steps: pattern.steps,
+    notes: pattern.notes.map((note) => createNote(note, note.duration)),
+  }
+}
+
 export function createTrack(instrument: Instrument, name = instrumentLabel(instrument)): Track {
   return {
     id: crypto.randomUUID(),

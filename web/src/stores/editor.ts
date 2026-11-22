@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import { createNote, createTrack, createTrackLane } from '@/domain/factories'
+import {
+  createNote,
+  createPattern,
+  createTrack,
+  createTrackLane,
+  duplicatePattern,
+} from '@/domain/factories'
 import {
   instrumentLabel,
   pitchRangeFor,
@@ -63,6 +69,27 @@ export const useEditorStore = defineStore('editor', () => {
   function selectPattern(patternId: string): void {
     selectedPatternId.value = patternId
     clearSelection()
+  }
+
+  function addPattern(pattern: Pattern): boolean {
+    const track = selectedTrack.value
+    if (!track) {
+      return false
+    }
+    const added = projectStore.change((project) => projects.addPattern(project, track.id, pattern))
+    if (added) {
+      selectPattern(pattern.id)
+    }
+    return added
+  }
+
+  function createSelectedTrackPattern(): boolean {
+    return addPattern(createPattern())
+  }
+
+  function duplicateSelectedPattern(): boolean {
+    const pattern = selectedPattern.value
+    return pattern ? addPattern(duplicatePattern(pattern)) : false
   }
 
   function selectNote(noteId: string): void {
@@ -154,6 +181,8 @@ export const useEditorStore = defineStore('editor', () => {
     selectedNotes,
     selectTrack,
     selectPattern,
+    createSelectedTrackPattern,
+    duplicateSelectedPattern,
     selectNote,
     toggleNoteSelection,
     addToSelection,

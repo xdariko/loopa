@@ -7,8 +7,9 @@ import {
   MAX_TRACK_NAME_LENGTH,
   MIN_BPM,
 } from '@/domain/constants'
-import { createProject, createTrack, createTrackLane } from '@/domain/factories'
+import { createPattern, createProject, createTrack, createTrackLane } from '@/domain/factories'
 import {
+  addPattern,
   addTrack,
   nextTrackName,
   removeTrack,
@@ -38,6 +39,21 @@ describe('createProject', () => {
       expect(lane).toHaveLength(DEFAULT_BAR_COUNT)
       expect(new Set(lane)).toEqual(new Set([track.patterns[0]?.id]))
     })
+  })
+})
+
+describe('addPattern', () => {
+  it('appends only to the target track and keeps the arrangement intact', () => {
+    const project = createProject()
+    const track = firstTrack(project)
+    const pattern = createPattern()
+
+    const updated = addPattern(project, track.id, pattern)
+
+    expect(firstTrack(updated).patterns).toEqual([...track.patterns, pattern])
+    expect(updated.tracks[1]).toBe(project.tracks[1])
+    expect(updated.arrangement).toBe(project.arrangement)
+    expect(addPattern(project, 'missing', pattern)).toBe(project)
   })
 })
 

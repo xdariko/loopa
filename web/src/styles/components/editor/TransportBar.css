@@ -1,5 +1,6 @@
 .transport {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
@@ -44,15 +45,19 @@
   min-width: 0;
 }
 
-.transport__menu {
-  width: 32px;
-  height: 32px;
-  margin-left: auto;
+.transport__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.transport__action {
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
-.transport__menu:hover {
+.transport__action:hover:enabled {
   background: var(--color-surface-muted);
   color: var(--color-text);
 }
