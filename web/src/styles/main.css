@@ -4,6 +4,7 @@
 
 @import './components/layout/AppHeader.css';
 @import './components/editor/TrackPanel.css';
+@import './components/editor/TrackSettings.css';
 @import './components/editor/TransportBar.css';
 @import './components/editor/PatternGrid.css';
 @import './components/editor/PatternPlayhead.css';

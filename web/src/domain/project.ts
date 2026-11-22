@@ -1,6 +1,18 @@
-import { MAX_BPM, MAX_SWING, MAX_TRACK_NAME_LENGTH, MIN_BPM, MIN_SWING } from './constants'
+import {
+  MAX_BPM,
+  MAX_EFFECT_AMOUNT,
+  MAX_SWING,
+  MAX_TRACK_NAME_LENGTH,
+  MAX_VOLUME,
+  MIN_BPM,
+  MIN_EFFECT_AMOUNT,
+  MIN_SWING,
+  MIN_VOLUME,
+} from './constants'
 import { clamp } from './numbers'
-import type { ArrangementLane, Pattern, Project, Track } from './types'
+import type { ArrangementLane, Pattern, Project, Track, TrackEffects } from './types'
+
+export type TrackMixControl = 'volume' | keyof TrackEffects
 
 function replaceById<T extends { readonly id: string }>(
   items: readonly T[],
@@ -117,12 +129,42 @@ export function renameTrack(project: Project, trackId: string, name: string): Pr
   )
 }
 
+export function setTrackMuted(project: Project, trackId: string, muted: boolean): Project {
+  return updateTrack(project, trackId, (track) =>
+    track.muted === muted ? track : { ...track, muted },
+  )
+}
+
+export function setTrackMixLevel(
+  project: Project,
+  trackId: string,
+  control: TrackMixControl,
+  level: number,
+): Project {
+  if (!Number.isFinite(level)) {
+    return project
+  }
+  return updateTrack(project, trackId, (track) => {
+    if (control === 'volume') {
+      const volume = clamp(level, MIN_VOLUME, MAX_VOLUME)
+      return track.volume === volume ? track : { ...track, volume }
+    }
+    const amount = clamp(level, MIN_EFFECT_AMOUNT, MAX_EFFECT_AMOUNT)
+    return track.effects[control] === amount
+      ? track
+      : { ...track, effects: { ...track.effects, [control]: amount } }
+  })
+}
+
 export function setBpm(project: Project, bpm: number): Project {
   const next = clamp(Math.round(bpm), MIN_BPM, MAX_BPM)
   return next === project.bpm ? project : { ...project, bpm: next }
 }
 
 export function setSwing(project: Project, swing: number): Project {
+  if (!Number.isFinite(swing)) {
+    return project
+  }
   const next = clamp(swing, MIN_SWING, MAX_SWING)
   return next === project.swing ? project : { ...project, swing: next }
 }

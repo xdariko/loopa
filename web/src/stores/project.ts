@@ -44,6 +44,18 @@ export const useProjectStore = defineStore('project', () => {
     return change((current) => projects.setSwing(current, swing))
   }
 
+  function setTrackMuted(trackId: string, muted: boolean): boolean {
+    return change((current) => projects.setTrackMuted(current, trackId, muted))
+  }
+
+  function setTrackMixLevel(
+    trackId: string,
+    control: projects.TrackMixControl,
+    level: number,
+  ): boolean {
+    return change((current) => projects.setTrackMixLevel(current, trackId, control, level))
+  }
+
   function rename(title: string): boolean {
     return change((current) => projects.renameProject(current, title))
   }
@@ -61,6 +73,8 @@ export const useProjectStore = defineStore('project', () => {
     load,
     setBpm,
     setSwing,
+    setTrackMuted,
+    setTrackMixLevel,
     rename,
     setArrangementPattern,
   }

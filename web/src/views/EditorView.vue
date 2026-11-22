@@ -8,7 +8,15 @@
       @add="editor.addTrack"
       @remove="editor.removeTrack"
       @rename="editor.renameTrack"
-    />
+    >
+      <TrackSettings
+        :track="editor.selectedTrack"
+        :swing="projectStore.project.swing"
+        @muted-change="projectStore.setTrackMuted"
+        @mix-change="projectStore.setTrackMixLevel"
+        @swing-change="projectStore.setSwing"
+      />
+    </TrackPanel>
 
     <section class="editor__workspace">
       <TransportBar
@@ -63,6 +71,7 @@ import { computed, onBeforeUnmount } from 'vue'
 
 import { playbackNoteKey } from '@/audio/timeline'
 import TrackPanel from '@/components/editor/TrackPanel.vue'
+import TrackSettings from '@/components/editor/TrackSettings.vue'
 import TransportBar from '@/components/editor/TransportBar.vue'
 import PatternGrid from '@/components/editor/PatternGrid.vue'
 import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'

@@ -2,6 +2,8 @@
   <aside class="tracks">
     <h2 class="tracks__heading">Дорожки</h2>
 
+    <slot />
+
     <ul class="tracks__list">
       <li v-for="track in tracks" :key="track.id" class="tracks__row">
         <input

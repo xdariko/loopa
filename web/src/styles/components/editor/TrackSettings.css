@@ -1,0 +1,64 @@
+.track-settings {
+  flex: none;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.track-settings__summary {
+  padding: var(--space-2);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.track-settings__summary:hover,
+.track-settings[open] .track-settings__summary {
+  color: var(--color-text);
+}
+
+.track-settings__group {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-1) var(--space-2) var(--space-3);
+  border: 0;
+}
+
+.track-settings__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.track-settings__mute {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.track-settings__slider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.track-settings__label {
+  overflow-wrap: anywhere;
+}
+
+.track-settings__value {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.track-settings__range {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+}
+
+.track-settings__range,
+.track-settings__checkbox {
+  accent-color: var(--color-accent);
+}

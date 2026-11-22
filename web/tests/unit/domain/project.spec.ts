@@ -18,6 +18,8 @@ import {
   setArrangementPattern,
   setBpm,
   setSwing,
+  setTrackMixLevel,
+  setTrackMuted,
   updatePattern,
 } from '@/domain/project'
 import type { Project, Track } from '@/domain/types'
@@ -29,6 +31,28 @@ function firstTrack(project: Project): Track {
   }
   return track
 }
+
+describe('track mix', () => {
+  it('clamps levels and preserves unrelated state', () => {
+    const project = createProject()
+    const track = firstTrack(project)
+    const louder = setTrackMixLevel(project, track.id, 'volume', 2)
+    const withDelay = setTrackMixLevel(louder, track.id, 'delay', 0.5)
+    const muted = setTrackMuted(withDelay, track.id, true)
+
+    expect(firstTrack(muted)).toMatchObject({
+      volume: 1,
+      muted: true,
+      effects: { delay: 0.5, reverb: track.effects.reverb },
+    })
+    expect(muted.tracks[1]).toBe(project.tracks[1])
+    expect(muted.arrangement).toBe(project.arrangement)
+    expect(setTrackMixLevel(muted, track.id, 'delay', Number.NaN)).toBe(muted)
+    expect(setTrackMixLevel(muted, track.id, 'reverb', -1)).toBe(muted)
+    expect(setTrackMuted(muted, track.id, true)).toBe(muted)
+    expect(setSwing(muted, Number.NaN)).toBe(muted)
+  })
+})
 
 describe('createProject', () => {
   it('starts with lead, bass and drums, each playing its first pattern in every bar', () => {

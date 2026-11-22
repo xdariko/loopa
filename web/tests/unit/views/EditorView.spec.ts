@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 import EditorView from '@/views/EditorView.vue'
 import { useEditorStore } from '@/stores/editor'
+import { useProjectStore } from '@/stores/project'
 
 const C4 = 60
 
@@ -55,6 +56,38 @@ describe('EditorView tracks', () => {
     expect(editor.selectedTrack?.instrument).toEqual({ kind: 'drums' })
     expect(wrapper.find('.pattern-grid__label').text()).toBe('Hat')
 
+    wrapper.unmount()
+  })
+
+  it('applies settings to the selected track and keeps swing at project level', async () => {
+    const wrapper = mount(EditorView, {
+      global: { stubs: { RouterLink: true, SpectrumView: true } },
+    })
+    const project = useProjectStore()
+    const original = project.project.tracks[0]
+    const settings = wrapper.get('.track-settings')
+    settings.element.setAttribute('open', '')
+    await wrapper.findAll('.tracks__item')[1]!.trigger('click')
+
+    const [volume, delay, reverb, swing] = settings.findAll('input[type="range"]')
+    await volume!.setValue('25')
+    await delay!.setValue('30')
+    await reverb!.setValue('40')
+    await settings.get('input[type="checkbox"]').setValue(true)
+    await swing!.setValue('50')
+
+    expect(project.project.tracks[0]).toBe(original)
+    expect(project.project.tracks[1]).toMatchObject({
+      volume: 0.25,
+      muted: true,
+      effects: { delay: 0.3, reverb: 0.4 },
+    })
+    expect(project.project.swing).toBe(0.5)
+    press('KeyZ', { ctrlKey: true })
+    await wrapper.vm.$nextTick()
+    expect(project.project.swing).toBe(0)
+    expect((swing!.element as HTMLInputElement).value).toBe('0')
+    expect(project.project.tracks[1]?.muted).toBe(true)
     wrapper.unmount()
   })
 })
