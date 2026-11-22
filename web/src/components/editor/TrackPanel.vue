@@ -62,14 +62,32 @@
       >
         {{ choosingInstrument ? 'Отмена' : '+ Дорожка' }}
       </button>
-      <button type="button" class="tracks__action">Загрузить звук</button>
+      <input
+        ref="sampleInput"
+        type="file"
+        :accept="SAMPLE_FILE_ACCEPT"
+        :disabled="importingSample"
+        hidden
+        @change="chooseSample"
+      />
+      <button
+        type="button"
+        class="tracks__action"
+        :disabled="importingSample"
+        @keydown.space.stop
+        @click="sampleInput?.click()"
+      >
+        {{ importingSample ? 'Загрузка…' : 'Загрузить звук' }}
+      </button>
+      <p v-if="sampleError" class="tracks__error" role="alert">{{ sampleError }}</p>
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { ref, type ComponentPublicInstance } from 'vue'
+import { ref, useTemplateRef, type ComponentPublicInstance } from 'vue'
 
+import { SAMPLE_FILE_ACCEPT } from '@/audio/sampleFile'
 import { MAX_TRACK_NAME_LENGTH } from '@/domain/constants'
 import { TRACK_INSTRUMENTS, instrumentLabel, type Instrument } from '@/domain/instruments'
 import type { Track } from '@/domain/types'
@@ -77,6 +95,8 @@ import type { Track } from '@/domain/types'
 defineProps<{
   tracks: readonly Track[]
   selectedTrackId: string | null
+  importingSample?: boolean
+  sampleError?: string
 }>()
 
 const emit = defineEmits<{
@@ -84,9 +104,22 @@ const emit = defineEmits<{
   add: [instrument: Instrument]
   remove: [trackId: string]
   rename: [trackId: string, name: string]
+  importSample: [file: File]
 }>()
 
+const sampleInput = useTemplateRef<HTMLInputElement>('sampleInput')
 const renamingTrackId = ref<string | null>(null)
+
+function chooseSample(event: Event): void {
+  if (!(event.target instanceof HTMLInputElement)) {
+    return
+  }
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (file) {
+    emit('importSample', file)
+  }
+}
 
 function focusNameInput(element: Element | ComponentPublicInstance | null): void {
   if (element instanceof HTMLInputElement) {

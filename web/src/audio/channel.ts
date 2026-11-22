@@ -3,6 +3,7 @@ import type { Track } from '@/domain/types'
 
 import type { EffectsBus } from './effects'
 import { createAudioInstrument } from './instruments/registry'
+import type { SampleLookup } from './instruments/sample'
 import type { AudioInstrument, NoteEvent, Voice } from './types'
 
 export class TrackChannel {
@@ -17,6 +18,7 @@ export class TrackChannel {
     track: Track,
     output: AudioNode,
     effects: EffectsBus,
+    private readonly lookupSample: SampleLookup,
   ) {
     this.volume = context.createGain()
     this.volume.connect(output)
@@ -25,7 +27,7 @@ export class TrackChannel {
     this.reverbSend = context.createGain()
     this.volume.connect(this.reverbSend).connect(effects.reverbInput)
     this.instrumentSource = track.instrument
-    this.instrument = createAudioInstrument(context, track.instrument)
+    this.instrument = createAudioInstrument(context, track.instrument, this.lookupSample)
     this.update(track)
   }
 
@@ -35,7 +37,7 @@ export class TrackChannel {
     this.reverbSend.gain.value = track.effects.reverb
     if (track.instrument !== this.instrumentSource) {
       this.instrumentSource = track.instrument
-      this.instrument = createAudioInstrument(this.context, track.instrument)
+      this.instrument = createAudioInstrument(this.context, track.instrument, this.lookupSample)
     }
   }
 

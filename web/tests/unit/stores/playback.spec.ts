@@ -16,7 +16,10 @@ const engine = vi.hoisted(() => ({
   resume: vi.fn<AudioEngine['resume']>(() => Promise.resolve()),
   syncTracks: vi.fn<AudioEngine['syncTracks']>(),
   setDelayTime: vi.fn<AudioEngine['setDelayTime']>(),
-  playNote: vi.fn<AudioEngine['playNote']>(),
+  playNote: vi.fn<AudioEngine['playNote']>((_, note) => ({
+    endTime: note.time + note.duration,
+    stop: () => {},
+  })),
   stopAll: vi.fn<AudioEngine['stopAll']>(),
 }))
 

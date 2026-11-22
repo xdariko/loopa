@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
+import { getAudioEngine } from '@/audio/engine'
+import { SampleFileError } from '@/audio/sampleFile'
 import EditorView from '@/views/EditorView.vue'
 import { useEditorStore } from '@/stores/editor'
 import { useProjectStore } from '@/stores/project'
@@ -43,6 +45,37 @@ describe('EditorView shortcuts', () => {
 describe('EditorView tracks', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  it('reports an invalid import and creates a selected sample track on retry', async () => {
+    const importSample = vi.spyOn(getAudioEngine(), 'importSample')
+    importSample.mockRejectedValueOnce(new SampleFileError('Выберите WAV или MP3.'))
+    importSample.mockResolvedValueOnce('sample-id')
+    const wrapper = mount(EditorView, {
+      global: { stubs: { RouterLink: true, SpectrumView: true } },
+    })
+    try {
+      const picker = wrapper.get('input[type="file"]')
+      const file = new File(['sound'], 'Layer.wav')
+      Object.defineProperty(picker.element, 'files', { value: [file] })
+
+      await picker.trigger('change')
+      await flushPromises()
+      expect(wrapper.get('[role="alert"]').text()).toContain('WAV или MP3')
+      expect(useProjectStore().project.tracks).toHaveLength(3)
+
+      await picker.trigger('change')
+      await flushPromises()
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false)
+      expect(useEditorStore().selectedTrack).toMatchObject({
+        name: 'Layer',
+        instrument: { kind: 'sample', sampleId: 'sample-id' },
+      })
+      expect(useProjectStore().project.tracks).toHaveLength(4)
+    } finally {
+      importSample.mockRestore()
+      wrapper.unmount()
+    }
   })
 
   it('opens the clicked track in the grid', async () => {

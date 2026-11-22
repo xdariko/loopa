@@ -1,8 +1,8 @@
 import type { Instrument } from '@/domain/instruments'
 
 import type { AudioInstrument } from '../types'
-import { SILENT_VOICE } from '../voice'
 import { DrumKit } from './drums'
+import { SampleInstrument, type SampleLookup } from './sample'
 import { SynthInstrument } from './synth'
 import { SYNTH_VOICINGS } from './synthPresets'
 
@@ -14,21 +14,24 @@ type InstrumentFactories = {
   readonly [Kind in InstrumentKind]: (
     context: BaseAudioContext,
     instrument: InstrumentOfKind<Kind>,
+    lookup: SampleLookup,
   ) => AudioInstrument
 }
-
-const silentInstrument: AudioInstrument = { play: () => SILENT_VOICE }
 
 const INSTRUMENT_FACTORIES: InstrumentFactories = {
   synth: (context, instrument) => new SynthInstrument(context, SYNTH_VOICINGS[instrument.preset]),
   drums: (context) => new DrumKit(context),
-  sample: () => silentInstrument,
+  sample: (context, instrument, lookup) =>
+    new SampleInstrument(context, () =>
+      instrument.sampleId !== null ? lookup(instrument.sampleId) : undefined,
+    ),
 }
 
 export function createAudioInstrument<Kind extends InstrumentKind>(
   context: BaseAudioContext,
   instrument: InstrumentOfKind<Kind>,
+  lookup: SampleLookup,
 ): AudioInstrument {
   const factory: InstrumentFactories[Kind] = INSTRUMENT_FACTORIES[instrument.kind]
-  return factory(context, instrument)
+  return factory(context, instrument, lookup)
 }

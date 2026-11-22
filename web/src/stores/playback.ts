@@ -74,12 +74,14 @@ export const usePlaybackStore = defineStore('playback', () => {
     const { step, time, stepDuration: duration } = scheduled
     notesStartingAt(pattern, step).forEach((note) => {
       const noteDuration = Math.min(note.duration, stepsRemaining) * duration
-      engine.playNote(trackId, { pitch: note.pitch, time, duration: noteDuration })
-      timeline.addNote({
-        id: playbackNoteKey(trackId, pattern.id, note.id),
-        start: time,
-        end: time + noteDuration,
-      })
+      const voice = engine.playNote(trackId, { pitch: note.pitch, time, duration: noteDuration })
+      if (voice.endTime > time) {
+        timeline.addNote({
+          id: playbackNoteKey(trackId, pattern.id, note.id),
+          start: time,
+          end: Math.min(time + noteDuration, voice.endTime),
+        })
+      }
     })
   }
 

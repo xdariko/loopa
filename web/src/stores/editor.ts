@@ -150,12 +150,9 @@ export const useEditorStore = defineStore('editor', () => {
     return editSelectedPattern((pattern) => notes.removeNotes(pattern, noteIds))
   }
 
-  function addTrack(instrument: Instrument): boolean {
+  function addTrack(instrument: Instrument, name = instrumentLabel(instrument)): boolean {
     const { project } = projectStore
-    const track = createTrack(
-      instrument,
-      projects.nextTrackName(project, instrumentLabel(instrument)),
-    )
+    const track = createTrack(instrument, projects.nextTrackName(project, name))
     const lane = createTrackLane(track, project.arrangement.barCount)
     const added = projectStore.change((project) => projects.addTrack(project, track, lane))
     if (added) {

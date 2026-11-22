@@ -35,9 +35,10 @@ const FIRST_NAME_SUFFIX = 2
 
 export function nextTrackName(project: Project, baseName: string): string {
   const taken = new Set(project.tracks.map((track) => track.name))
-  let name = baseName
+  let name = baseName.slice(0, MAX_TRACK_NAME_LENGTH)
   for (let suffix = FIRST_NAME_SUFFIX; taken.has(name); suffix += 1) {
-    name = `${baseName} ${suffix}`
+    const ending = ` ${suffix}`
+    name = baseName.slice(0, MAX_TRACK_NAME_LENGTH - ending.length) + ending
   }
   return name
 }

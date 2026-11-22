@@ -4,10 +4,13 @@
       class="editor__tracks"
       :tracks="projectStore.project.tracks"
       :selected-track-id="editor.selectedTrack?.id ?? null"
+      :importing-sample="importingSample"
+      :sample-error="sampleError"
       @select="editor.selectTrack"
       @add="editor.addTrack"
       @remove="editor.removeTrack"
       @rename="editor.renameTrack"
+      @import-sample="importSample"
     >
       <TrackSettings
         :track="editor.selectedTrack"
@@ -67,8 +70,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 
+import { getAudioEngine } from '@/audio/engine'
+import { SampleFileError } from '@/audio/sampleFile'
 import { playbackNoteKey } from '@/audio/timeline'
 import TrackPanel from '@/components/editor/TrackPanel.vue'
 import TrackSettings from '@/components/editor/TrackSettings.vue'
@@ -85,6 +90,9 @@ import { useProjectStore } from '@/stores/project'
 const editor = useEditorStore()
 const projectStore = useProjectStore()
 const playback = usePlaybackStore()
+const importingSample = ref(false)
+const sampleError = ref('')
+const sampleImport = new AbortController()
 
 const cursor = usePlaybackCursor({ active: () => playback.isPlaying, sample: playback.sample })
 const isSelectedPatternPlaying = computed(() => {
@@ -113,7 +121,30 @@ const playingNoteIds = computed(() => {
 })
 providePlaybackCursor(cursor)
 
-onBeforeUnmount(playback.pause)
+onBeforeUnmount(() => {
+  sampleImport.abort()
+  playback.pause()
+})
+
+async function importSample(file: File): Promise<void> {
+  if (importingSample.value) {
+    return
+  }
+  importingSample.value = true
+  sampleError.value = ''
+  try {
+    const sampleId = await getAudioEngine().importSample(file, sampleImport.signal)
+    const name = file.name.replace(/\.[^.]+$/, '').trim() || 'Сэмпл'
+    editor.addTrack({ kind: 'sample', sampleId }, name)
+  } catch (error) {
+    if (!sampleImport.signal.aborted) {
+      sampleError.value =
+        error instanceof SampleFileError ? error.message : 'Не удалось загрузить звук.'
+    }
+  } finally {
+    importingSample.value = false
+  }
+}
 
 function openArrangementPattern(trackId: string, patternId: string | null): void {
   if (editor.selectedTrack?.id !== trackId) {

@@ -2,8 +2,10 @@ import type { Track } from '@/domain/types'
 
 import { TrackChannel } from './channel'
 import { EffectsBus } from './effects'
+import { readSampleFile, SampleFileError } from './sampleFile'
 import { SPECTRUM_FFT_SIZE } from './spectrum'
 import type { NoteEvent, Voice } from './types'
+import { SILENT_VOICE } from './voice'
 
 const MASTER_LEVEL = 0.8
 
@@ -20,6 +22,7 @@ export class AudioEngine {
   private delaySeconds = 0
   private readonly channels = new Map<string, TrackChannel>()
   private readonly voices = new Set<Voice>()
+  private readonly samples = new Map<string, { file: File; buffer: AudioBuffer }>()
 
   constructor(private readonly createContext: () => AudioContext = () => new AudioContext()) {}
 
@@ -53,13 +56,39 @@ export class AudioEngine {
     this.graph?.effects.setDelayTime(seconds)
   }
 
-  playNote(trackId: string, note: NoteEvent): void {
+  playNote(trackId: string, note: NoteEvent): Voice {
     const channel = this.channels.get(trackId)
     if (!channel) {
-      return
+      return SILENT_VOICE
     }
     this.forgetFinishedVoices()
-    this.voices.add(channel.play(note))
+    const voice = channel.play(note)
+    if (voice !== SILENT_VOICE) {
+      this.voices.add(voice)
+    }
+    return voice
+  }
+
+  async importSample(file: File, signal: AbortSignal): Promise<string> {
+    const bytes = await readSampleFile(file)
+    signal.throwIfAborted()
+
+    let buffer: AudioBuffer
+    try {
+      buffer = await this.ensureGraph().context.decodeAudioData(bytes)
+    } catch {
+      throw new SampleFileError(
+        'Не удалось открыть звук. Проверьте, что файл WAV или MP3 не повреждён.',
+      )
+    }
+    signal.throwIfAborted()
+    const id = crypto.randomUUID()
+    this.samples.set(id, { file, buffer })
+    return id
+  }
+
+  getSampleFile(sampleId: string): File | undefined {
+    return this.samples.get(sampleId)?.file
   }
 
   readSpectrum(target: Uint8Array<ArrayBuffer>): void {
@@ -109,7 +138,13 @@ export class AudioEngine {
       } else {
         this.channels.set(
           track.id,
-          new TrackChannel(graph.context, track, graph.master, graph.effects),
+          new TrackChannel(
+            graph.context,
+            track,
+            graph.master,
+            graph.effects,
+            (id) => this.samples.get(id)?.buffer,
+          ),
         )
       }
     })
