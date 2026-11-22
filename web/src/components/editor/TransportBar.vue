@@ -5,7 +5,7 @@
       class="transport__play"
       :class="{ 'transport__play--active': isPlaying }"
       :aria-label="isPlaying ? 'Пауза' : 'Воспроизвести'"
-      @click="emit('toggle')"
+      @click="$emit('toggle')"
     >
       {{ isPlaying ? '❚❚' : '▶' }}
     </button>
@@ -19,7 +19,7 @@
         :aria-pressed="mode === option.value"
         :disabled="isPlaying"
         @keydown.space.stop
-        @click="emit('modeChange', option.value)"
+        @click="$emit('modeChange', option.value)"
       >
         {{ option.label }}
       </button>
@@ -43,7 +43,7 @@
         class="transport__input"
         :value="selectedPatternId"
         :disabled="!patterns.length"
-        @change="emit('selectPattern', ($event.target as HTMLSelectElement).value)"
+        @change="$emit('selectPattern', ($event.target as HTMLSelectElement).value)"
       >
         <option v-for="(pattern, index) in patterns" :key="pattern.id" :value="pattern.id">
           {{ index + 1 }}
@@ -56,7 +56,7 @@
         type="button"
         class="transport__action"
         @keydown.space.stop
-        @click="emit('createPattern')"
+        @click="$emit('createPattern')"
       >
         Новый
       </button>
@@ -65,7 +65,7 @@
         class="transport__action"
         :disabled="!selectedPatternId"
         @keydown.space.stop
-        @click="emit('duplicatePattern')"
+        @click="$emit('duplicatePattern')"
       >
         Дублировать
       </button>
@@ -77,44 +77,54 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { nextTick } from 'vue'
+<script lang="ts">
+import { defineComponent, nextTick, type PropType } from 'vue'
 
 import { MAX_BPM, MIN_BPM } from '@/domain/constants'
 import type { Pattern } from '@/domain/types'
 import type { PlaybackMode } from '@/stores/playback'
 
-const playbackModes: readonly { value: PlaybackMode; label: string }[] = [
-  { value: 'composition', label: 'Композиция' },
-  { value: 'pattern', label: 'Паттерн' },
-]
+export default defineComponent({
+  props: {
+    isPlaying: { type: Boolean, required: true },
+    bpm: { type: Number, required: true },
+    mode: String as PropType<PlaybackMode>,
+    patterns: Array as PropType<readonly Pattern[]>,
+    selectedPatternId: String,
+  },
 
-const props = defineProps<{
-  isPlaying: boolean
-  bpm: number
-  mode?: PlaybackMode
-  patterns?: readonly Pattern[]
-  selectedPatternId?: string
-}>()
+  emits: {
+    toggle: () => true,
+    bpmChange: (...args: [bpm: number]) => args.length === 1,
+    modeChange: (...args: [mode: PlaybackMode]) => args.length === 1,
+    selectPattern: (...args: [patternId: string]) => args.length === 1,
+    createPattern: () => true,
+    duplicatePattern: () => true,
+  },
 
-const emit = defineEmits<{
-  toggle: []
-  bpmChange: [bpm: number]
-  modeChange: [mode: PlaybackMode]
-  selectPattern: [patternId: string]
-  createPattern: []
-  duplicatePattern: []
-}>()
+  data() {
+    return {
+      MAX_BPM,
+      MIN_BPM,
+      playbackModes: [
+        { value: 'composition', label: 'Композиция' },
+        { value: 'pattern', label: 'Паттерн' },
+      ] as readonly { value: PlaybackMode; label: string }[],
+    }
+  },
 
-async function handleBpmChange(event: Event): Promise<void> {
-  if (!(event.target instanceof HTMLInputElement)) {
-    return
-  }
-  const input = event.target
-  if (Number.isFinite(input.valueAsNumber)) {
-    emit('bpmChange', input.valueAsNumber)
-  }
-  await nextTick()
-  input.value = String(props.bpm)
-}
+  methods: {
+    async handleBpmChange(event: Event): Promise<void> {
+      if (!(event.target instanceof HTMLInputElement)) {
+        return
+      }
+      const input = event.target
+      if (Number.isFinite(input.valueAsNumber)) {
+        this.$emit('bpmChange', input.valueAsNumber)
+      }
+      await nextTick()
+      input.value = String(this.bpm)
+    },
+  },
+})
 </script>

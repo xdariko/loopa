@@ -1,9 +1,5 @@
 <template>
-  <section
-    class="arrangement"
-    :class="{ 'arrangement--expanded': expanded }"
-    aria-label="Композиция"
-  >
+  <section class="arrangement" :class="{ 'arrangement--expanded': expanded }" aria-label="Композиция">
     <div class="arrangement__header">
       <h2 class="arrangement__heading">Композиция</h2>
       <button
@@ -35,21 +31,13 @@
             }}</span>
           </div>
         </div>
-        <div
-          v-for="row in rows"
-          :key="row.track.id"
-          class="arrangement__row"
-          :style="{ '--track-color': row.color }"
-        >
+
+        <div v-for="row in rows" :key="row.track.id" class="arrangement__row" :style="row.style">
           <span class="arrangement__track" :title="row.track.name">
             <span class="arrangement__track-dot" aria-hidden="true" />{{ row.track.name }}
           </span>
           <div class="arrangement__bars">
-            <div
-              v-for="({ pattern, number }, bar) in row.slots"
-              :key="bar"
-              class="arrangement__cell"
-            >
+            <div v-for="({ pattern, number }, bar) in row.slots" :key="bar" class="arrangement__cell">
               <button
                 v-if="pattern"
                 type="button"
@@ -108,11 +96,7 @@
         >
           +
         </button>
-        <div
-          v-if="playbackBar !== null"
-          class="arrangement__playback"
-          :style="{ '--arrangement-playback-bar': playbackBar }"
-        >
+        <div v-if="playbackBar !== null" class="arrangement__playback" :style="playbackStyle">
           <PatternPlayhead :steps="STEPS_PER_BAR" />
         </div>
       </div>
@@ -125,7 +109,7 @@
         class="arrangement__picker"
         role="dialog"
         :aria-label="pickerLabel"
-        :style="[picker.style, { '--track-color': pickerRow.color }]"
+        :style="pickerStyle"
         tabindex="-1"
         @focusout="dismissOnFocusOut"
         @keydown.stop
@@ -149,16 +133,12 @@
             Паттерн {{ index + 1 }}
           </button>
         </div>
+
         <div class="arrangement__picker-actions">
           <button type="button" class="arrangement__picker-action" @click="createPattern">
             + Новый паттерн
           </button>
-          <button
-            v-if="pickerPatternId !== null"
-            type="button"
-            class="arrangement__picker-action"
-            @click="assignPattern(null)"
-          >
+          <button v-if="pickerPatternId !== null" type="button" class="arrangement__picker-action" @click="assignPattern(null)" >
             Очистить такт
           </button>
         </div>
@@ -167,17 +147,8 @@
   </section>
 </template>
 
-<script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-  shallowRef,
-  useTemplateRef,
-  type CSSProperties,
-} from 'vue'
+<script lang="ts">
+import { defineComponent, useTemplateRef, nextTick, type CSSProperties, type PropType } from 'vue'
 
 import PatternPlayhead from '@/components/editor/PatternPlayhead.vue'
 import PatternPreview from '@/components/editor/PatternPreview.vue'
@@ -186,19 +157,6 @@ import { STEPS_PER_BAR } from '@/domain/constants'
 import { pitchRangeFor } from '@/domain/instruments'
 import { trackColor } from '@/domain/trackColor'
 import type { Arrangement, Track } from '@/domain/types'
-
-const props = defineProps<{
-  tracks: readonly Track[]
-  arrangement: Arrangement
-  selectedTrackId: string | null
-}>()
-
-const emit = defineEmits<{
-  appendBar: []
-  open: [trackId: string, patternId: string | null, bar: number]
-  assign: [trackId: string, bar: number, patternId: string | null]
-  create: [trackId: string, bar: number]
-}>()
 
 interface Cell {
   trackId: string
@@ -211,171 +169,244 @@ interface Picker extends Cell {
 }
 
 const PICKER_WIDTH = 280
+
 const PICKER_GAP = 8
 
-const expanded = ref(false)
-const { bar: playbackBar, patterns: playingPatterns } = injectPlaybackCursor()
-const activeCell = shallowRef<Cell | null>(null)
-const picker = shallowRef<Picker | null>(null)
-const pickerElement = useTemplateRef<HTMLElement>('pickerElement')
-const viewport = useTemplateRef<HTMLElement>('viewport')
-const pickerLabel = computed(
-  () => `${pickerRow.value?.track.name} · Такт ${(picker.value?.bar ?? 0) + 1}`,
-)
-const pickerPatternId = computed(() =>
-  picker.value ? (props.arrangement.lanes[picker.value.trackId]?.[picker.value.bar] ?? null) : null,
-)
+export default defineComponent({
+  components: {
+    PatternPlayhead,
+    PatternPreview,
+  },
 
-const rows = computed(() =>
-  props.tracks.map((track, index) => {
-    const patterns = new Map(
-      track.patterns.map((pattern, index) => [pattern.id, { pattern, number: index + 1 }]),
-    )
-    const lane = props.arrangement.lanes[track.id]
-    const slots = Array.from({ length: props.arrangement.barCount }, (_, bar) => {
-      const id = lane?.[bar]
-      const entry = id == null ? undefined : patterns.get(id)
-      return entry ?? { pattern: null, number: null }
-    })
-    return { track, range: pitchRangeFor(track.instrument), slots, color: trackColor(index) }
-  }),
-)
-const pickerRow = computed(() => rows.value.find((row) => row.track.id === picker.value?.trackId))
+  props: {
+    tracks: { type: Array as PropType<readonly Track[]>, required: true },
+    arrangement: { type: Object as PropType<Arrangement>, required: true },
+    selectedTrackId: { type: [String, null] as PropType<string | null>, required: true },
+  },
 
-const selectedCell = computed(() => {
-  const cell = activeCell.value
-  if (!cell || cell.trackId !== props.selectedTrackId) {
-    return null
-  }
-  const track = props.tracks.find((track) => track.id === cell.trackId)
-  const patternId = props.arrangement.lanes[cell.trackId]?.[cell.bar]
-  if (!track || patternId === undefined) {
-    return null
-  }
-  return { track, bar: cell.bar, patternId }
-})
+  emits: {
+    appendBar: () => true,
+    open: (...args: [trackId: string, patternId: string | null, bar: number]) => args.length === 3,
+    assign: (...args: [trackId: string, bar: number, patternId: string | null]) =>
+      args.length === 3,
+    create: (...args: [trackId: string, bar: number]) => args.length === 2,
+  },
 
-function slotLabel(track: Track, bar: number, number: number | null): string {
-  return `${track.name} · Такт ${bar + 1} · ${number === null ? 'Пусто' : `Паттерн ${number}`}`
-}
+  setup() {
+    const playbackCursor = injectPlaybackCursor()
+    const pickerElement = useTemplateRef<HTMLElement>('pickerElement')
+    const viewport = useTemplateRef<HTMLElement>('viewport')
+    return { playbackCursor, pickerElement, viewport }
+  },
 
-function openCell(trackId: string, bar: number, patternId: string | null): void {
-  closePicker()
-  activeCell.value = { trackId, bar }
-  emit('open', trackId, patternId, bar)
-}
+  data() {
+    return {
+      STEPS_PER_BAR,
+      expanded: false,
+      activeCell: null as Cell | null,
+      picker: null as Picker | null,
+    }
+  },
 
-function toggleExpanded(): void {
-  expanded.value = !expanded.value
-  closePicker()
-}
-
-async function appendBar(): Promise<void> {
-  closePicker()
-  emit('appendBar')
-  await nextTick()
-  if (viewport.value) {
-    viewport.value.scrollLeft = viewport.value.scrollWidth
-  }
-}
-
-function isPickerFor(trackId: string, bar: number): boolean {
-  return picker.value?.trackId === trackId && picker.value.bar === bar
-}
-
-async function openPicker(event: MouseEvent, trackId: string, bar: number): Promise<void> {
-  const trigger = event.currentTarget
-  if (!(trigger instanceof HTMLButtonElement)) {
-    return
-  }
-  if (isPickerFor(trackId, bar)) {
-    closePicker(true)
-    return
-  }
-  const anchor = trigger.parentElement?.getBoundingClientRect() ?? trigger.getBoundingClientRect()
-  const width = Math.min(PICKER_WIDTH, window.innerWidth - 2 * PICKER_GAP)
-  const left = Math.max(PICKER_GAP, Math.min(anchor.left, window.innerWidth - width - PICKER_GAP))
-  const above = anchor.top - PICKER_GAP
-  const below = window.innerHeight - anchor.bottom - PICKER_GAP
-  const vertical =
-    above > below
-      ? { bottom: `${window.innerHeight - anchor.top + PICKER_GAP}px` }
-      : { top: `${anchor.bottom + PICKER_GAP}px` }
-  picker.value = {
-    trackId,
-    bar,
-    trigger,
-    style: {
-      ...vertical,
-      left: `${left}px`,
-      width: `${width}px`,
-      maxHeight: `${Math.max(0, Math.max(above, below) - PICKER_GAP)}px`,
+  computed: {
+    playbackBar() {
+      return this.playbackCursor.bar.value
     },
-  }
-  await nextTick()
-  pickerElement.value?.focus({ preventScroll: true })
-}
 
-function closePicker(restoreFocus = false): void {
-  const trigger = picker.value?.trigger
-  const cell = trigger?.parentElement
-  picker.value = null
-  if (restoreFocus && trigger) {
-    void nextTick(() => {
-      const target = trigger.isConnected ? trigger : cell?.querySelector('button')
-      target?.focus({ preventScroll: true })
-    })
-  }
-}
+    playbackStyle() {
+      return { '--arrangement-playback-bar': this.playbackBar ?? undefined }
+    },
 
-function assignPattern(patternId: string | null): void {
-  const cell = picker.value
-  if (!cell) {
-    return
-  }
-  closePicker(true)
-  emit('assign', cell.trackId, cell.bar, patternId)
-  if (patternId !== null) {
-    openCell(cell.trackId, cell.bar, patternId)
-  }
-}
+    pickerStyle() {
+      if (!this.picker || !this.pickerRow) {
+        return undefined
+      }
+      return { ...this.picker.style, ...this.pickerRow.style }
+    },
 
-function createPattern(): void {
-  const cell = picker.value
-  if (cell) {
-    closePicker(true)
-    activeCell.value = { trackId: cell.trackId, bar: cell.bar }
-    emit('create', cell.trackId, cell.bar)
-  }
-}
+    playingPatterns() {
+      return this.playbackCursor.patterns.value
+    },
 
-function dismissOnOutsideClick(event: PointerEvent): void {
-  if (
-    event.target instanceof Node &&
-    !pickerElement.value?.contains(event.target) &&
-    !picker.value?.trigger.contains(event.target)
-  ) {
-    closePicker()
-  }
-}
+    pickerLabel() {
+      return `${this.pickerRow?.track.name} · Такт ${(this.picker?.bar ?? 0) + 1}`
+    },
 
-function dismissOnFocusOut(event: FocusEvent): void {
-  if (event.relatedTarget instanceof Node && !pickerElement.value?.contains(event.relatedTarget)) {
-    closePicker()
-  }
-}
+    pickerPatternId() {
+      return this.picker
+        ? (this.arrangement.lanes[this.picker.trackId]?.[this.picker.bar] ?? null)
+        : null
+    },
 
-function dismissOnResize(): void {
-  closePicker()
-}
+    rows() {
+      return this.tracks.map((track, index) => {
+        const patterns = new Map(
+          track.patterns.map((pattern, index) => [pattern.id, { pattern, number: index + 1 }]),
+        )
+        const lane = this.arrangement.lanes[track.id]
+        const slots = Array.from({ length: this.arrangement.barCount }, (_, bar) => {
+          const id = lane?.[bar]
+          const entry = id == null ? undefined : patterns.get(id)
+          return entry ?? { pattern: null, number: null }
+        })
+        return {
+          track,
+          range: pitchRangeFor(track.instrument),
+          slots,
+          style: { '--track-color': trackColor(index) },
+        }
+      })
+    },
 
-onMounted(() => {
-  window.addEventListener('pointerdown', dismissOnOutsideClick)
-  window.addEventListener('resize', dismissOnResize)
-})
+    pickerRow() {
+      return this.rows.find((row) => row.track.id === this.picker?.trackId)
+    },
 
-onUnmounted(() => {
-  window.removeEventListener('pointerdown', dismissOnOutsideClick)
-  window.removeEventListener('resize', dismissOnResize)
+    selectedCell() {
+      const cell = this.activeCell
+      if (!cell || cell.trackId !== this.selectedTrackId) {
+        return null
+      }
+      const track = this.tracks.find((track) => track.id === cell.trackId)
+      const patternId = this.arrangement.lanes[cell.trackId]?.[cell.bar]
+      if (!track || patternId === undefined) {
+        return null
+      }
+      return { track, bar: cell.bar, patternId }
+    },
+  },
+
+  mounted() {
+    window.addEventListener('pointerdown', this.dismissOnOutsideClick)
+    window.addEventListener('resize', this.dismissOnResize)
+  },
+
+  unmounted() {
+    window.removeEventListener('pointerdown', this.dismissOnOutsideClick)
+    window.removeEventListener('resize', this.dismissOnResize)
+  },
+
+  methods: {
+    slotLabel(track: Track, bar: number, number: number | null): string {
+      return `${track.name} · Такт ${bar + 1} · ${number === null ? 'Пусто' : `Паттерн ${number}`}`
+    },
+
+    openCell(trackId: string, bar: number, patternId: string | null): void {
+      this.closePicker()
+      this.activeCell = { trackId, bar }
+      this.$emit('open', trackId, patternId, bar)
+    },
+
+    toggleExpanded(): void {
+      this.expanded = !this.expanded
+      this.closePicker()
+    },
+
+    async appendBar(): Promise<void> {
+      this.closePicker()
+      this.$emit('appendBar')
+      await nextTick()
+      if (this.viewport) {
+        this.viewport.scrollLeft = this.viewport.scrollWidth
+      }
+    },
+
+    isPickerFor(trackId: string, bar: number): boolean {
+      return this.picker?.trackId === trackId && this.picker.bar === bar
+    },
+
+    async openPicker(event: MouseEvent, trackId: string, bar: number): Promise<void> {
+      const trigger = event.currentTarget
+      if (!(trigger instanceof HTMLButtonElement)) {
+        return
+      }
+      if (this.isPickerFor(trackId, bar)) {
+        this.closePicker(true)
+        return
+      }
+      const anchor =
+        trigger.parentElement?.getBoundingClientRect() ?? trigger.getBoundingClientRect()
+      const width = Math.min(PICKER_WIDTH, window.innerWidth - 2 * PICKER_GAP)
+      const left = Math.max(
+        PICKER_GAP,
+        Math.min(anchor.left, window.innerWidth - width - PICKER_GAP),
+      )
+      const above = anchor.top - PICKER_GAP
+      const below = window.innerHeight - anchor.bottom - PICKER_GAP
+      const vertical =
+        above > below
+          ? { bottom: `${window.innerHeight - anchor.top + PICKER_GAP}px` }
+          : { top: `${anchor.bottom + PICKER_GAP}px` }
+      this.picker = {
+        trackId,
+        bar,
+        trigger,
+        style: {
+          ...vertical,
+          left: `${left}px`,
+          width: `${width}px`,
+          maxHeight: `${Math.max(0, Math.max(above, below) - PICKER_GAP)}px`,
+        },
+      }
+      await nextTick()
+      this.pickerElement?.focus({ preventScroll: true })
+    },
+
+    closePicker(restoreFocus = false): void {
+      const trigger = this.picker?.trigger
+      const cell = trigger?.parentElement
+      this.picker = null
+      if (restoreFocus && trigger) {
+        void nextTick(() => {
+          const target = trigger.isConnected ? trigger : cell?.querySelector('button')
+          target?.focus({ preventScroll: true })
+        })
+      }
+    },
+
+    assignPattern(patternId: string | null): void {
+      const cell = this.picker
+      if (!cell) {
+        return
+      }
+      this.closePicker(true)
+      this.$emit('assign', cell.trackId, cell.bar, patternId)
+      if (patternId !== null) {
+        this.openCell(cell.trackId, cell.bar, patternId)
+      }
+    },
+
+    createPattern(): void {
+      const cell = this.picker
+      if (cell) {
+        this.closePicker(true)
+        this.activeCell = { trackId: cell.trackId, bar: cell.bar }
+        this.$emit('create', cell.trackId, cell.bar)
+      }
+    },
+
+    dismissOnOutsideClick(event: PointerEvent): void {
+      if (
+        event.target instanceof Node &&
+        !this.pickerElement?.contains(event.target) &&
+        !this.picker?.trigger.contains(event.target)
+      ) {
+        this.closePicker()
+      }
+    },
+
+    dismissOnFocusOut(event: FocusEvent): void {
+      if (
+        event.relatedTarget instanceof Node &&
+        !this.pickerElement?.contains(event.relatedTarget)
+      ) {
+        this.closePicker()
+      }
+    },
+
+    dismissOnResize(): void {
+      this.closePicker()
+    },
+  },
 })
 </script>

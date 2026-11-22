@@ -2,9 +2,8 @@
   <canvas ref="canvas" class="spectrum" aria-hidden="true" data-testid="spectrum" />
 </template>
 
-<script setup lang="ts">
-import { shallowRef, useTemplateRef, watch } from 'vue'
-
+<script lang="ts">
+import { defineComponent, type PropType, markRaw, toRef, useTemplateRef } from 'vue'
 import {
   SPECTRUM_BIN_COUNT,
   SpectrumMeter,
@@ -24,88 +23,104 @@ const REDUCED_MOTION_FRAME_SECONDS = 0.1
 const MS_PER_SECOND = 1000
 const COLOR_PROPERTY = '--color-spectrum'
 
-const props = defineProps<{
-  playing: boolean
-  source: SpectrumSource
-}>()
+export default defineComponent({
+  props: {
+    playing: { type: Boolean, required: true },
+    source: { type: Object as PropType<SpectrumSource>, required: true },
+  },
 
-const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
-const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-const darkScheme = useMediaQuery('(prefers-color-scheme: dark)')
+  setup() {
+    const canvas = useTemplateRef<HTMLCanvasElement>('canvas')
+    const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+    const darkScheme = useMediaQuery('(prefers-color-scheme: dark)')
+    return { canvas, reducedMotion, darkScheme }
+  },
 
-const bins = new Uint8Array(SPECTRUM_BIN_COUNT)
-const silence = new Float32Array(BAND_COUNT)
-const meter = new SpectrumMeter(BAND_COUNT)
-const visible = shallowRef(false)
-let lastFrameTime: number | null = null
-let barColor = ''
+  data() {
+    return {
+      bins: new Uint8Array(SPECTRUM_BIN_COUNT),
+      silence: new Float32Array(BAND_COUNT),
+      meter: markRaw(new SpectrumMeter(BAND_COUNT)),
+      visible: false,
+      lastFrameTime: null as number | null,
+      barColor: '',
+    }
+  },
 
-function readTarget(): Float32Array {
-  if (!props.playing) {
-    return silence
-  }
-  props.source.read(bins)
-  return spectrumBands(bins, BAND_COUNT)
-}
+  watch: {
+    darkScheme() {
+      this.readColor()
+      this.draw()
+    },
+  },
 
-function advance(time: number): void {
-  const elapsedSeconds = lastFrameTime === null ? 0 : (time - lastFrameTime) / MS_PER_SECOND
-  if (
-    reducedMotion.value &&
-    lastFrameTime !== null &&
-    elapsedSeconds < REDUCED_MOTION_FRAME_SECONDS
-  ) {
-    return
-  }
-  lastFrameTime = time
-  const target = readTarget()
-  if (reducedMotion.value) {
-    meter.jumpTo(target)
-  } else {
-    meter.fallTowards(target, elapsedSeconds, FALL_PER_SECOND)
-  }
-  draw()
-  visible.value = !meter.isSilent()
-  if (!props.playing && !visible.value) {
-    lastFrameTime = null
-  }
-}
+  created() {
+    const canvas = toRef(() => this.canvas)
+    useCanvasResolution(canvas, () => {
+      this.readColor()
+      this.draw()
+    })
+    useAnimationFrame(this.advance, () => this.playing || this.visible)
+  },
 
-function readColor(): void {
-  if (canvas.value) {
-    barColor = getComputedStyle(canvas.value).getPropertyValue(COLOR_PROPERTY).trim()
-  }
-}
+  methods: {
+    readTarget(): Float32Array {
+      if (!this.playing) {
+        return this.silence
+      }
+      this.source.read(this.bins)
+      return spectrumBands(this.bins, BAND_COUNT)
+    },
 
-function draw(): void {
-  const element = canvas.value
-  const context = element?.getContext('2d')
-  if (!element || !context) {
-    return
-  }
-  const { width, height } = element
-  const slot = width / BAND_COUNT
-  const barWidth = slot * (1 - BAR_GAP_RATIO)
-  const minBarHeight = MIN_BAR_HEIGHT_CSS_PX * window.devicePixelRatio
-  context.clearRect(0, 0, width, height)
-  context.fillStyle = barColor
-  meter.levels.forEach((level, band) => {
-    const barHeight = Math.max(level * height, minBarHeight)
-    context.globalAlpha = MIN_BAR_ALPHA + (1 - MIN_BAR_ALPHA) * level
-    context.fillRect(band * slot, height - barHeight, barWidth, barHeight)
-  })
-  context.globalAlpha = 1
-}
+    advance(time: number): void {
+      const elapsedSeconds =
+        this.lastFrameTime === null ? 0 : (time - this.lastFrameTime) / MS_PER_SECOND
+      if (
+        this.reducedMotion &&
+        this.lastFrameTime !== null &&
+        elapsedSeconds < REDUCED_MOTION_FRAME_SECONDS
+      ) {
+        return
+      }
+      this.lastFrameTime = time
+      const target = this.readTarget()
+      if (this.reducedMotion) {
+        this.meter.jumpTo(target)
+      } else {
+        this.meter.fallTowards(target, elapsedSeconds, FALL_PER_SECOND)
+      }
+      this.draw()
+      this.visible = !this.meter.isSilent()
+      if (!this.playing && !this.visible) {
+        this.lastFrameTime = null
+      }
+    },
 
-useCanvasResolution(canvas, () => {
-  readColor()
-  draw()
+    readColor(): void {
+      if (this.canvas) {
+        this.barColor = getComputedStyle(this.canvas).getPropertyValue(COLOR_PROPERTY).trim()
+      }
+    },
+
+    draw(): void {
+      const element = this.canvas
+      const context = element?.getContext('2d')
+      if (!element || !context) {
+        return
+      }
+      const { width, height } = element
+      const slot = width / BAND_COUNT
+      const barWidth = slot * (1 - BAR_GAP_RATIO)
+      const minBarHeight = MIN_BAR_HEIGHT_CSS_PX * window.devicePixelRatio
+      context.clearRect(0, 0, width, height)
+      context.fillStyle = this.barColor
+      this.meter.levels.forEach((level, band) => {
+        const barHeight = Math.max(level * height, minBarHeight)
+        context.globalAlpha = MIN_BAR_ALPHA + (1 - MIN_BAR_ALPHA) * level
+        context.fillRect(band * slot, height - barHeight, barWidth, barHeight)
+      })
+      context.globalAlpha = 1
+    },
+  },
 })
-
-watch(darkScheme, () => {
-  readColor()
-  draw()
-})
-
-useAnimationFrame(advance, () => props.playing || visible.value)
 </script>

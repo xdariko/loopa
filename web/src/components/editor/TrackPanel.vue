@@ -9,7 +9,7 @@
         v-for="(track, index) in tracks"
         :key="track.id"
         class="tracks__row"
-        :style="{ '--track-color': trackColor(index) }"
+        :style="trackStyle(index)"
       >
         <input
           v-if="renamingTrackId === track.id"
@@ -29,7 +29,7 @@
           :class="{ 'tracks__item--active': track.id === selectedTrackId }"
           :aria-pressed="track.id === selectedTrackId"
           title="Двойной клик или F2 — переименовать"
-          @click="emit('select', track.id)"
+          @click="$emit('select', track.id)"
           @dblclick="startRename(track.id)"
           @keydown.f2="startRename(track.id)"
         >
@@ -40,7 +40,7 @@
           type="button"
           class="tracks__remove"
           :aria-label="`Удалить дорожку ${track.name}`"
-          @click="emit('remove', track.id)"
+          @click="$emit('remove', track.id)"
         >
           ×
         </button>
@@ -80,7 +80,7 @@
         class="tracks__action"
         :disabled="importingSample"
         @keydown.space.stop
-        @click="sampleInput?.click()"
+        @click="($refs.sampleInput as HTMLInputElement | undefined)?.click()"
       >
         {{ importingSample ? 'Загрузка…' : 'Загрузить звук' }}
       </button>
@@ -89,8 +89,8 @@
   </aside>
 </template>
 
-<script setup lang="ts">
-import { ref, useTemplateRef, type ComponentPublicInstance } from 'vue'
+<script lang="ts">
+import { defineComponent, type ComponentPublicInstance, type PropType } from 'vue'
 
 import { SAMPLE_FILE_ACCEPT } from '@/audio/sampleFile'
 import { MAX_TRACK_NAME_LENGTH } from '@/domain/constants'
@@ -98,68 +98,79 @@ import { TRACK_INSTRUMENTS, instrumentLabel, type Instrument } from '@/domain/in
 import { trackColor } from '@/domain/trackColor'
 import type { Track } from '@/domain/types'
 
-defineProps<{
-  tracks: readonly Track[]
-  selectedTrackId: string | null
-  importingSample?: boolean
-  sampleError?: string
-}>()
+export default defineComponent({
+  props: {
+    tracks: { type: Array as PropType<readonly Track[]>, required: true },
+    selectedTrackId: { type: [String, null] as PropType<string | null>, required: true },
+    importingSample: Boolean,
+    sampleError: String,
+  },
 
-const emit = defineEmits<{
-  select: [trackId: string]
-  add: [instrument: Instrument]
-  remove: [trackId: string]
-  rename: [trackId: string, name: string]
-  importSample: [file: File]
-}>()
+  emits: {
+    select: (...args: [trackId: string]) => args.length === 1,
+    add: (...args: [instrument: Instrument]) => args.length === 1,
+    remove: (...args: [trackId: string]) => args.length === 1,
+    rename: (...args: [trackId: string, name: string]) => args.length === 2,
+    importSample: (...args: [file: File]) => args.length === 1,
+  },
 
-const sampleInput = useTemplateRef<HTMLInputElement>('sampleInput')
-const renamingTrackId = ref<string | null>(null)
+  data() {
+    return {
+      SAMPLE_FILE_ACCEPT,
+      MAX_TRACK_NAME_LENGTH,
+      renamingTrackId: null as string | null,
+      instrumentOptions: TRACK_INSTRUMENTS.map((instrument) => ({
+        instrument,
+        label: instrumentLabel(instrument),
+      })),
+      choosingInstrument: false,
+    }
+  },
 
-function chooseSample(event: Event): void {
-  if (!(event.target instanceof HTMLInputElement)) {
-    return
-  }
-  const file = event.target.files?.[0]
-  event.target.value = ''
-  if (file) {
-    emit('importSample', file)
-  }
-}
+  methods: {
+    trackStyle(index: number) {
+      return { '--track-color': trackColor(index) }
+    },
 
-function focusNameInput(element: Element | ComponentPublicInstance | null): void {
-  if (element instanceof HTMLInputElement) {
-    element.focus()
-    element.select()
-  }
-}
+    chooseSample(event: Event): void {
+      if (!(event.target instanceof HTMLInputElement)) {
+        return
+      }
+      const file = event.target.files?.[0]
+      event.target.value = ''
+      if (file) {
+        this.$emit('importSample', file)
+      }
+    },
 
-function startRename(trackId: string): void {
-  renamingTrackId.value = trackId
-}
+    focusNameInput(element: Element | ComponentPublicInstance | null): void {
+      if (element instanceof HTMLInputElement) {
+        element.focus()
+        element.select()
+      }
+    },
 
-function finishRename(event: Event): void {
-  const trackId = renamingTrackId.value
-  if (!trackId || !(event.target instanceof HTMLInputElement)) {
-    return
-  }
-  renamingTrackId.value = null
-  emit('rename', trackId, event.target.value)
-}
+    startRename(trackId: string): void {
+      this.renamingTrackId = trackId
+    },
 
-function cancelRename(): void {
-  renamingTrackId.value = null
-}
+    finishRename(event: Event): void {
+      const trackId = this.renamingTrackId
+      if (!trackId || !(event.target instanceof HTMLInputElement)) {
+        return
+      }
+      this.renamingTrackId = null
+      this.$emit('rename', trackId, event.target.value)
+    },
 
-const instrumentOptions = TRACK_INSTRUMENTS.map((instrument) => ({
-  instrument,
-  label: instrumentLabel(instrument),
-}))
+    cancelRename(): void {
+      this.renamingTrackId = null
+    },
 
-const choosingInstrument = ref(false)
-
-function add(instrument: Instrument): void {
-  choosingInstrument.value = false
-  emit('add', instrument)
-}
+    add(instrument: Instrument): void {
+      this.choosingInstrument = false
+      this.$emit('add', instrument)
+    },
+  },
+})
 </script>

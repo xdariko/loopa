@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { shallowRef } from 'vue'
 
 import {
   createNote,
@@ -16,195 +16,161 @@ import {
 } from '@/domain/instruments'
 import * as notes from '@/domain/notes'
 import * as projects from '@/domain/project'
-import type { NoteOffset, NotePosition, Pattern } from '@/domain/types'
+import type { Note, NoteOffset, NotePosition, Pattern, Track } from '@/domain/types'
 
 import { useProjectStore } from './project'
 
 type PatternEdit = (pattern: Pattern, range: PitchRange) => Pattern
 
-export const useEditorStore = defineStore('editor', () => {
-  const projectStore = useProjectStore()
-
-  const selectedTrackId = ref<string | null>(null)
-  const selectedPatternId = ref<string | null>(null)
-  const selectedNoteIds = shallowRef<readonly string[]>([])
-
-  const selectedTrack = computed(() => {
-    const { project } = projectStore
-    const chosen = selectedTrackId.value
-      ? projects.findTrack(project, selectedTrackId.value)
-      : undefined
-    return chosen ?? project.tracks[0] ?? null
-  })
-
-  const selectedPattern = computed(() => {
-    const patterns = selectedTrack.value?.patterns ?? []
-    const chosen = patterns.find((pattern) => pattern.id === selectedPatternId.value)
-    return chosen ?? patterns[0] ?? null
-  })
-
-  const selectedNotes = computed(() => {
-    const ids = new Set(selectedNoteIds.value)
-    return selectedPattern.value?.notes.filter((note) => ids.has(note.id)) ?? []
-  })
-
-  function editSelectedPattern(edit: PatternEdit): boolean {
-    const track = selectedTrack.value
-    const pattern = selectedPattern.value
-    if (!track || !pattern) {
-      return false
+export const useEditorStore = defineStore('editor', {
+  state() {
+    return {
+      selectedTrackId: null as string | null,
+      selectedPatternId: null as string | null,
+      selectedNoteIds: shallowRef<readonly string[]>([]),
     }
-    const range = pitchRangeFor(track.instrument)
-    return projectStore.change((project) =>
-      projects.updatePattern(project, track.id, pattern.id, (current) => edit(current, range)),
-    )
-  }
-
-  function selectTrack(trackId: string | null): void {
-    selectedTrackId.value = trackId
-    selectedPatternId.value = null
-    clearSelection()
-  }
-
-  function selectPattern(patternId: string): void {
-    selectedPatternId.value = patternId
-    clearSelection()
-  }
-
-  function addPattern(pattern: Pattern): boolean {
-    const track = selectedTrack.value
-    if (!track) {
-      return false
-    }
-    const added = projectStore.change((project) => projects.addPattern(project, track.id, pattern))
-    if (added) {
-      selectPattern(pattern.id)
-    }
-    return added
-  }
-
-  function createSelectedTrackPattern(): boolean {
-    return addPattern(createPattern())
-  }
-
-  function createPatternInBar(trackId: string, bar: number): boolean {
-    const pattern = createPattern()
-    const created = projectStore.change((project) => {
-      const withPattern = projects.addPattern(project, trackId, pattern)
-      const withAssignment = projects.setArrangementPattern(withPattern, trackId, bar, pattern.id)
-      return withAssignment === withPattern ? project : withAssignment
-    })
-    if (created) {
-      selectTrack(trackId)
-      selectPattern(pattern.id)
-    }
-    return created
-  }
-
-  function duplicateSelectedPattern(): boolean {
-    const pattern = selectedPattern.value
-    return pattern ? addPattern(duplicatePattern(pattern)) : false
-  }
-
-  function selectNote(noteId: string): void {
-    selectedNoteIds.value = [noteId]
-  }
-
-  function toggleNoteSelection(noteId: string): void {
-    const ids = selectedNoteIds.value
-    selectedNoteIds.value = ids.includes(noteId)
-      ? ids.filter((id) => id !== noteId)
-      : [...ids, noteId]
-  }
-
-  function addToSelection(noteIds: readonly string[]): void {
-    selectedNoteIds.value = [...new Set([...selectedNoteIds.value, ...noteIds])]
-  }
-
-  function clearSelection(): void {
-    selectedNoteIds.value = []
-  }
-
-  function addNote(position: NotePosition, duration?: number): boolean {
-    const note = createNote(position, duration)
-    const added = editSelectedPattern((pattern, range) => notes.addNote(pattern, note, range))
-    if (added) {
-      selectNote(note.id)
-    }
-    return added
-  }
-
-  function moveNotes(noteIds: readonly string[], offset: NoteOffset): boolean {
-    return editSelectedPattern((pattern, range) => notes.moveNotes(pattern, noteIds, offset, range))
-  }
-
-  function resizeNotes(noteIds: readonly string[], durationChange: number): boolean {
-    return editSelectedPattern((pattern, range) =>
-      notes.resizeNotes(pattern, noteIds, durationChange, range),
-    )
-  }
-
-  function deleteSelectedNotes(): boolean {
-    const noteIds = selectedNoteIds.value
-    clearSelection()
-    return editSelectedPattern((pattern) => notes.removeNotes(pattern, noteIds))
-  }
-
-  function addTrack(instrument: Instrument, name = instrumentLabel(instrument)): boolean {
-    const { project } = projectStore
-    const track = createTrack(instrument, projects.nextTrackName(project, name))
-    const lane = createTrackLane(track, project.arrangement.barCount)
-    const added = projectStore.change((project) => projects.addTrack(project, track, lane))
-    if (added) {
-      selectTrack(track.id)
-    }
-    return added
-  }
-
-  function removeTrack(trackId: string): boolean {
-    const wasSelected = selectedTrack.value?.id === trackId
-    const index = projectStore.project.tracks.findIndex((track) => track.id === trackId)
-    const removed = projectStore.change((project) => projects.removeTrack(project, trackId))
-    if (removed && wasSelected) {
-      const { tracks } = projectStore.project
-      const neighbour = tracks[index] ?? tracks[index - 1]
-      if (neighbour) {
-        selectTrack(neighbour.id)
-      } else {
-        selectedTrackId.value = null
-        selectedPatternId.value = null
-        clearSelection()
+  },
+  getters: {
+    selectedTrack(): Track | null {
+      const { project } = useProjectStore()
+      const chosen = this.selectedTrackId
+        ? projects.findTrack(project, this.selectedTrackId)
+        : undefined
+      return chosen ?? project.tracks[0] ?? null
+    },
+    selectedPattern(): Pattern | null {
+      const patterns = this.selectedTrack?.patterns ?? []
+      const chosen = patterns.find((pattern) => pattern.id === this.selectedPatternId)
+      return chosen ?? patterns[0] ?? null
+    },
+    selectedNotes(): readonly Note[] {
+      const ids = new Set(this.selectedNoteIds)
+      return this.selectedPattern?.notes.filter((note) => ids.has(note.id)) ?? []
+    },
+  },
+  actions: {
+    editSelectedPattern(edit: PatternEdit): boolean {
+      const track = this.selectedTrack
+      const pattern = this.selectedPattern
+      if (!track || !pattern) {
+        return false
       }
-    }
-    return removed
-  }
-
-  function renameTrack(trackId: string, name: string): boolean {
-    return projectStore.change((project) => projects.renameTrack(project, trackId, name))
-  }
-
-  return {
-    selectedTrackId,
-    selectedPatternId,
-    selectedNoteIds,
-    selectedTrack,
-    selectedPattern,
-    selectedNotes,
-    selectTrack,
-    selectPattern,
-    createSelectedTrackPattern,
-    createPatternInBar,
-    duplicateSelectedPattern,
-    selectNote,
-    toggleNoteSelection,
-    addToSelection,
-    clearSelection,
-    addNote,
-    moveNotes,
-    resizeNotes,
-    deleteSelectedNotes,
-    addTrack,
-    removeTrack,
-    renameTrack,
-  }
+      const range = pitchRangeFor(track.instrument)
+      return useProjectStore().change((project) =>
+        projects.updatePattern(project, track.id, pattern.id, (current) => edit(current, range)),
+      )
+    },
+    selectTrack(trackId: string | null): void {
+      this.selectedTrackId = trackId
+      this.selectedPatternId = null
+      this.clearSelection()
+    },
+    selectPattern(patternId: string): void {
+      this.selectedPatternId = patternId
+      this.clearSelection()
+    },
+    addPattern(pattern: Pattern): boolean {
+      const track = this.selectedTrack
+      if (!track) {
+        return false
+      }
+      const added = useProjectStore().change((project) =>
+        projects.addPattern(project, track.id, pattern),
+      )
+      if (added) {
+        this.selectPattern(pattern.id)
+      }
+      return added
+    },
+    createSelectedTrackPattern(): boolean {
+      return this.addPattern(createPattern())
+    },
+    createPatternInBar(trackId: string, bar: number): boolean {
+      const pattern = createPattern()
+      const created = useProjectStore().change((project) => {
+        const withPattern = projects.addPattern(project, trackId, pattern)
+        const withAssignment = projects.setArrangementPattern(withPattern, trackId, bar, pattern.id)
+        return withAssignment === withPattern ? project : withAssignment
+      })
+      if (created) {
+        this.selectTrack(trackId)
+        this.selectPattern(pattern.id)
+      }
+      return created
+    },
+    duplicateSelectedPattern(): boolean {
+      const pattern = this.selectedPattern
+      return pattern ? this.addPattern(duplicatePattern(pattern)) : false
+    },
+    selectNote(noteId: string): void {
+      this.selectedNoteIds = [noteId]
+    },
+    toggleNoteSelection(noteId: string): void {
+      const ids = this.selectedNoteIds
+      this.selectedNoteIds = ids.includes(noteId)
+        ? ids.filter((id) => id !== noteId)
+        : [...ids, noteId]
+    },
+    addToSelection(noteIds: readonly string[]): void {
+      this.selectedNoteIds = [...new Set([...this.selectedNoteIds, ...noteIds])]
+    },
+    clearSelection(): void {
+      this.selectedNoteIds = []
+    },
+    addNote(position: NotePosition, duration?: number): boolean {
+      const note = createNote(position, duration)
+      const added = this.editSelectedPattern((pattern, range) =>
+        notes.addNote(pattern, note, range),
+      )
+      if (added) {
+        this.selectNote(note.id)
+      }
+      return added
+    },
+    moveNotes(noteIds: readonly string[], offset: NoteOffset): boolean {
+      return this.editSelectedPattern((pattern, range) =>
+        notes.moveNotes(pattern, noteIds, offset, range),
+      )
+    },
+    resizeNotes(noteIds: readonly string[], durationChange: number): boolean {
+      return this.editSelectedPattern((pattern, range) =>
+        notes.resizeNotes(pattern, noteIds, durationChange, range),
+      )
+    },
+    deleteSelectedNotes(): boolean {
+      const noteIds = this.selectedNoteIds
+      this.clearSelection()
+      return this.editSelectedPattern((pattern) => notes.removeNotes(pattern, noteIds))
+    },
+    addTrack(instrument: Instrument, name = instrumentLabel(instrument)): boolean {
+      const { project } = useProjectStore()
+      const track = createTrack(instrument, projects.nextTrackName(project, name))
+      const lane = createTrackLane(track, project.arrangement.barCount)
+      const added = useProjectStore().change((project) => projects.addTrack(project, track, lane))
+      if (added) {
+        this.selectTrack(track.id)
+      }
+      return added
+    },
+    removeTrack(trackId: string): boolean {
+      const wasSelected = this.selectedTrack?.id === trackId
+      const index = useProjectStore().project.tracks.findIndex((track) => track.id === trackId)
+      const removed = useProjectStore().change((project) => projects.removeTrack(project, trackId))
+      if (removed && wasSelected) {
+        const { tracks } = useProjectStore().project
+        const neighbour = tracks[index] ?? tracks[index - 1]
+        if (neighbour) {
+          this.selectTrack(neighbour.id)
+        } else {
+          this.selectedTrackId = null
+          this.selectedPatternId = null
+          this.clearSelection()
+        }
+      }
+      return removed
+    },
+    renameTrack(trackId: string, name: string): boolean {
+      return useProjectStore().change((project) => projects.renameTrack(project, trackId, name))
+    },
+  },
 })

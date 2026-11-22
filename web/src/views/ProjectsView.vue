@@ -31,69 +31,85 @@
   </section>
 </template>
 
-<script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
-import { useRouter } from 'vue-router'
+<script lang="ts">
+import { defineComponent, markRaw } from 'vue'
 
 import { AccountRequiredError, getProject, listProjects, type ProjectSummary } from '@/api/projects'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
-const router = useRouter()
-const persistence = useProjectPersistenceStore()
-const playback = usePlaybackStore()
-const controller = new AbortController()
-const projects = shallowRef<ProjectSummary[]>([])
-const loading = ref(false)
-const opening = ref<number | null>(null)
-const loadFailed = ref(false)
-const accountRequired = ref(false)
-const error = ref('')
-const dateFormat = new Intl.DateTimeFormat('ru', { dateStyle: 'medium', timeStyle: 'short' })
-
-onMounted(refresh)
-onBeforeUnmount(() => controller.abort())
-
-async function refresh(): Promise<void> {
-  loading.value = true
-  loadFailed.value = false
-  accountRequired.value = false
-  error.value = ''
-  try {
-    projects.value = await listProjects(controller.signal)
-  } catch (reason) {
-    if (!controller.signal.aborted) {
-      projects.value = []
-      accountRequired.value = reason instanceof AccountRequiredError
-      error.value = reason instanceof Error ? reason.message : 'Не удалось загрузить проекты.'
-      loadFailed.value = true
+export default defineComponent({
+  data() {
+    return {
+      persistence: useProjectPersistenceStore(),
+      playback: usePlaybackStore(),
+      controller: new AbortController(),
+      projects: [] as ProjectSummary[],
+      loading: false,
+      opening: null as number | null,
+      loadFailed: false,
+      accountRequired: false,
+      error: '',
+      dateFormat: markRaw(
+        new Intl.DateTimeFormat('ru', { dateStyle: 'medium', timeStyle: 'short' }),
+      ),
     }
-  } finally {
-    loading.value = false
-  }
-}
+  },
 
-async function open(id: number): Promise<void> {
-  if (persistence.isDirty && !window.confirm('Открыть проект без сохранения текущих изменений?')) {
-    return
-  }
-  opening.value = id
-  error.value = ''
-  try {
-    const remote = await getProject(id, controller.signal)
-    await persistence.open(remote, controller.signal)
-    playback.reset()
-    await router.push({ name: 'editor' })
-  } catch (reason) {
-    if (!controller.signal.aborted) {
-      if (reason instanceof AccountRequiredError) {
-        projects.value = []
-        accountRequired.value = true
+  mounted() {
+    void this.refresh()
+  },
+
+  beforeUnmount() {
+    this.controller.abort()
+  },
+
+  methods: {
+    async refresh(): Promise<void> {
+      this.loading = true
+      this.loadFailed = false
+      this.accountRequired = false
+      this.error = ''
+      try {
+        this.projects = await listProjects(this.controller.signal)
+      } catch (reason) {
+        if (!this.controller.signal.aborted) {
+          this.projects = []
+          this.accountRequired = reason instanceof AccountRequiredError
+          this.error = reason instanceof Error ? reason.message : 'Не удалось загрузить проекты.'
+          this.loadFailed = true
+        }
+      } finally {
+        this.loading = false
       }
-      error.value = reason instanceof Error ? reason.message : 'Не удалось открыть проект.'
-    }
-  } finally {
-    opening.value = null
-  }
-}
+    },
+
+    async open(id: number): Promise<void> {
+      if (
+        this.persistence.isDirty &&
+        !window.confirm('Открыть проект без сохранения текущих изменений?')
+      ) {
+        return
+      }
+      this.opening = id
+      this.error = ''
+      try {
+        const remote = await getProject(id, this.controller.signal)
+        await this.persistence.open(remote, this.controller.signal)
+        this.playback.reset()
+        await this.$router.push({ name: 'editor' })
+      } catch (reason) {
+        if (!this.controller.signal.aborted) {
+          if (reason instanceof AccountRequiredError) {
+            this.projects = []
+            this.accountRequired = true
+          }
+          this.error = reason instanceof Error ? reason.message : 'Не удалось открыть проект.'
+        }
+      } finally {
+        this.opening = null
+      }
+    },
+  },
+})
 </script>

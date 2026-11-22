@@ -1,12 +1,8 @@
 <template>
-  <div ref="viewport" class="pattern-grid" :style="{ '--track-color': trackColor }">
-    <div class="pattern-grid__body" :style="{ '--pattern-steps': pattern.steps }">
+  <div ref="viewport" class="pattern-grid" :style="trackStyle">
+    <div class="pattern-grid__body" :style="gridStyle">
       <template v-for="row in rows" :key="row.pitch">
-        <span
-          class="pattern-grid__label"
-          :class="{ 'pattern-grid__label--sharp': row.sharp }"
-          :style="{ gridRow: row.line }"
-        >
+        <span class="pattern-grid__label" :class="{ 'pattern-grid__label--sharp': row.sharp }" :style="row.labelStyle">
           {{ row.label }}
         </span>
         <div
@@ -18,7 +14,7 @@
             'pattern-grid__cell--sharp': row.sharp,
             'pattern-grid__cell--beat': step % STEPS_PER_BEAT === 0,
           }"
-          :style="{ gridRow: row.line, gridColumn: stepColumn(step) }"
+          :style="cellPlacement(row.line, step)"
           :data-step="step"
           :data-pitch="row.pitch"
           @pointerdown="handleCellPointerDown($event, { step, pitch: row.pitch })"
@@ -30,7 +26,7 @@
         v-for="(note, index) in visibleGhostNotes"
         :key="index"
         class="pattern-grid__ghost-note"
-        :style="{ ...notePlacement(note), '--ghost-color': note.color }"
+        :style="ghostNoteStyle(note)"
         aria-hidden="true"
       />
 
@@ -69,8 +65,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+<script lang="ts">
+import { defineComponent, useTemplateRef, type PropType } from 'vue'
 
 import PatternPlayhead from '@/components/editor/PatternPlayhead.vue'
 import { useAreaSelection } from '@/composables/useAreaSelection'
@@ -90,183 +86,232 @@ const LABEL_COLUMNS = 1
 
 type NoteGesture = 'move' | 'resize'
 
-const props = defineProps<{
-  pattern: Pattern
-  instrument: Instrument
-  trackColor?: string
-  selectedNoteIds: readonly string[]
-  ghostNotes?: readonly (Note & { readonly color: string })[]
-  playingNoteIds?: ReadonlySet<string>
-  hidePlayhead?: boolean
-}>()
+export default defineComponent({
+  components: {
+    PatternPlayhead,
+  },
 
-const emit = defineEmits<{
-  add: [position: NotePosition]
-  select: [noteId: string]
-  toggle: [noteId: string]
-  selectArea: [noteIds: readonly string[]]
-  move: [noteIds: readonly string[], offset: NoteOffset]
-  resize: [noteIds: readonly string[], durationChange: number]
-}>()
+  props: {
+    pattern: { type: Object as PropType<Pattern>, required: true },
+    instrument: { type: Object as PropType<Instrument>, required: true },
+    trackColor: String,
+    selectedNoteIds: { type: Array as PropType<readonly string[]>, required: true },
+    ghostNotes: Array as PropType<readonly (Note & { readonly color: string })[]>,
+    playingNoteIds: Object as PropType<ReadonlySet<string>>,
+    hidePlayhead: Boolean,
+  },
 
-const viewport = useTemplateRef<HTMLElement>('viewport')
-const cells = useTemplateRef<HTMLElement[]>('cells')
+  emits: {
+    add: (...args: [position: NotePosition]) => args.length === 1,
+    select: (...args: [noteId: string]) => args.length === 1,
+    toggle: (...args: [noteId: string]) => args.length === 1,
+    selectArea: (...args: [noteIds: readonly string[]]) => args.length === 1,
+    move: (...args: [noteIds: readonly string[], offset: NoteOffset]) => args.length === 2,
+    resize: (...args: [noteIds: readonly string[], durationChange: number]) => args.length === 2,
+  },
 
-const rows = computed(() =>
-  pitchesFor(props.instrument).map((pitch, index) => ({
-    pitch,
-    line: index + 1,
-    label: pitchLabel(props.instrument, pitch),
-    sharp: isSharpPitch(props.instrument, pitch),
-  })),
-)
+  setup(props, { emit }) {
+    const viewport = useTemplateRef<HTMLElement>('viewport')
+    const cells = useTemplateRef<HTMLElement[]>('cells')
+    const bounds = (): NoteDragBounds => ({
+      steps: props.pattern.steps,
+      range: pitchRangeFor(props.instrument),
+    })
+    function measureCell(): GridCellSize | null {
+      const cell = cells.value?.[0]
+      if (!cell) {
+        return null
+      }
+      const { width, height } = cell.getBoundingClientRect()
+      return width > 0 && height > 0 ? { width, height } : null
+    }
+    const drag = useNoteDrag({
+      bounds,
+      cellSize: measureCell,
+      scrollContainer: () => viewport.value,
+      onMove: (noteIds, offset) => emit('move', noteIds, offset),
+      onResize: (noteIds, durationChange) => emit('resize', noteIds, durationChange),
+    })
+    const selection = useAreaSelection({
+      bounds,
+      scrollContainer: () => viewport.value,
+      onSelect: (area) => {
+        const noteIds = notesInArea(props.pattern, area).map((note) => note.id)
+        if (noteIds.length > 0) {
+          emit('selectArea', noteIds)
+        }
+      },
+    })
+    return { drag, selection }
+  },
 
-const steps = computed(() => Array.from({ length: props.pattern.steps }, (_, step) => step))
-
-const rowLineByPitch = computed(() => new Map(rows.value.map((row) => [row.pitch, row.line])))
-
-const pitchRange = computed(() => pitchRangeFor(props.instrument))
-
-const selectedIds = computed(() => new Set(props.selectedNoteIds))
-const visibleGhostNotes = computed(() =>
-  (props.ghostNotes ?? [])
-    .filter((note) => rowLineByPitch.value.has(note.pitch) && note.step < props.pattern.steps)
-    .map((note) => ({
-      ...note,
-      duration: Math.min(note.duration, props.pattern.steps - note.step),
-    })),
-)
-
-function bounds(): NoteDragBounds {
-  return { steps: props.pattern.steps, range: pitchRange.value }
-}
-
-const drag = useNoteDrag({
-  bounds,
-  cellSize: measureCell,
-  scrollContainer: () => viewport.value,
-  onMove: (noteIds, offset) => emit('move', noteIds, offset),
-  onResize: (noteIds, durationChange) => emit('resize', noteIds, durationChange),
-})
-
-const selection = useAreaSelection({
-  bounds,
-  scrollContainer: () => viewport.value,
-  onSelect: (area) => {
-    const noteIds = notesInArea(props.pattern, area).map((note) => note.id)
-    if (noteIds.length > 0) {
-      emit('selectArea', noteIds)
+  data() {
+    return {
+      STEPS_PER_BEAT,
     }
   },
+
+  computed: {
+    trackStyle() {
+      return { '--track-color': this.trackColor }
+    },
+
+    gridStyle() {
+      return { '--pattern-steps': this.pattern.steps }
+    },
+
+    rows() {
+      return pitchesFor(this.instrument).map((pitch, index) => ({
+        pitch,
+        line: index + 1,
+        labelStyle: { gridRow: index + 1 },
+        label: pitchLabel(this.instrument, pitch),
+        sharp: isSharpPitch(this.instrument, pitch),
+      }))
+    },
+
+    steps() {
+      return Array.from({ length: this.pattern.steps }, (_, step) => step)
+    },
+
+    rowLineByPitch() {
+      return new Map(this.rows.map((row) => [row.pitch, row.line]))
+    },
+
+    pitchRange() {
+      return pitchRangeFor(this.instrument)
+    },
+
+    selectedIds() {
+      return new Set(this.selectedNoteIds)
+    },
+
+    visibleGhostNotes() {
+      return (this.ghostNotes ?? [])
+        .filter((note) => this.rowLineByPitch.has(note.pitch) && note.step < this.pattern.steps)
+        .map((note) => ({
+          ...note,
+          duration: Math.min(note.duration, this.pattern.steps - note.step),
+        }))
+    },
+
+    selectionArea() {
+      return this.selection.area.value
+    },
+
+    previewById() {
+      return new Map((this.drag.preview.value ?? []).map((note) => [note.id, note]))
+    },
+
+    previewFits() {
+      const preview = this.drag.preview.value
+      return preview ? canPlaceNotes(this.pattern, preview, this.pitchRange) : true
+    },
+
+    areaNoteIds() {
+      const area = this.selectionArea
+      return new Set(area ? notesInArea(this.pattern, area).map((note) => note.id) : [])
+    },
+
+    playheadPlacement() {
+      return {
+        gridRow: this.span(1, this.rows.length),
+        gridColumn: this.span(this.stepColumn(0), this.pattern.steps),
+      }
+    },
+  },
+
+  methods: {
+    isSelected(note: Note): boolean {
+      return this.selectedIds.has(note.id)
+    },
+
+    isHighlighted(note: Note): boolean {
+      return this.isSelected(note) || this.areaNoteIds.has(note.id)
+    },
+
+    isPlaying(note: Note): boolean {
+      return this.playingNoteIds?.has(note.id) ?? false
+    },
+
+    isDragging(note: Note): boolean {
+      return this.previewById.has(note.id)
+    },
+
+    displayed(note: Note): Note {
+      return this.previewById.get(note.id) ?? note
+    },
+
+    stepColumn(step: number): number {
+      return LABEL_COLUMNS + step + 1
+    },
+
+    span(start: number | undefined, length: number): string {
+      return `${start} / span ${length}`
+    },
+
+    cellPlacement(line: number, step: number) {
+      return { gridRow: line, gridColumn: this.stepColumn(step) }
+    },
+
+    ghostNoteStyle(note: Note & { readonly color: string }) {
+      return { ...this.notePlacement(note), '--ghost-color': note.color }
+    },
+
+    notePlacement(note: Note) {
+      return {
+        gridRow: this.rowLineByPitch.get(note.pitch),
+        gridColumn: this.span(this.stepColumn(note.step), note.duration),
+      }
+    },
+
+    areaPlacement(area: NoteArea) {
+      return {
+        gridRow: this.span(
+          this.rowLineByPitch.get(area.highPitch),
+          area.highPitch - area.lowPitch + 1,
+        ),
+        gridColumn: this.span(this.stepColumn(area.fromStep), area.toStep - area.fromStep + 1),
+      }
+    },
+
+    noteLabel(note: Note): string {
+      return `${pitchLabel(this.instrument, note.pitch)}, шаг ${note.step + 1}`
+    },
+
+    draggedGroup(note: Note): readonly Note[] {
+      if (!this.isSelected(note)) {
+        this.$emit('select', note.id)
+        return [note]
+      }
+      return this.pattern.notes.filter(this.isSelected)
+    },
+
+    handleNotePointerDown(event: PointerEvent, note: Note, gesture: NoteGesture): void {
+      if (event.shiftKey) {
+        this.$emit('toggle', note.id)
+        return
+      }
+      const group = this.draggedGroup(note)
+      if (gesture === 'resize') {
+        this.drag.startResize(event, group)
+      } else {
+        this.drag.startMove(event, group)
+      }
+    },
+
+    handleCellPointerDown(event: PointerEvent, cell: NotePosition): void {
+      if (!event.shiftKey || !(event.currentTarget instanceof HTMLElement)) {
+        return
+      }
+      this.selection.start(event, cell, event.currentTarget.getBoundingClientRect())
+    },
+
+    handleCellClick(event: MouseEvent, cell: NotePosition): void {
+      if (!event.shiftKey) {
+        this.$emit('add', cell)
+      }
+    },
+  },
 })
-
-const selectionArea = selection.area
-
-const previewById = computed(
-  () => new Map((drag.preview.value ?? []).map((note) => [note.id, note])),
-)
-
-const previewFits = computed(() => {
-  const preview = drag.preview.value
-  return preview ? canPlaceNotes(props.pattern, preview, pitchRange.value) : true
-})
-
-const areaNoteIds = computed(() => {
-  const area = selectionArea.value
-  return new Set(area ? notesInArea(props.pattern, area).map((note) => note.id) : [])
-})
-
-function measureCell(): GridCellSize | null {
-  const cell = cells.value?.[0]
-  if (!cell) {
-    return null
-  }
-  const { width, height } = cell.getBoundingClientRect()
-  return width > 0 && height > 0 ? { width, height } : null
-}
-
-function isSelected(note: Note): boolean {
-  return selectedIds.value.has(note.id)
-}
-
-function isHighlighted(note: Note): boolean {
-  return isSelected(note) || areaNoteIds.value.has(note.id)
-}
-
-function isPlaying(note: Note): boolean {
-  return props.playingNoteIds?.has(note.id) ?? false
-}
-
-function isDragging(note: Note): boolean {
-  return previewById.value.has(note.id)
-}
-
-function displayed(note: Note): Note {
-  return previewById.value.get(note.id) ?? note
-}
-
-function stepColumn(step: number): number {
-  return LABEL_COLUMNS + step + 1
-}
-
-function span(start: number | undefined, length: number): string {
-  return `${start} / span ${length}`
-}
-
-function notePlacement(note: Note) {
-  return {
-    gridRow: rowLineByPitch.value.get(note.pitch),
-    gridColumn: span(stepColumn(note.step), note.duration),
-  }
-}
-
-const playheadPlacement = computed(() => ({
-  gridRow: span(1, rows.value.length),
-  gridColumn: span(stepColumn(0), props.pattern.steps),
-}))
-
-function areaPlacement(area: NoteArea) {
-  return {
-    gridRow: span(rowLineByPitch.value.get(area.highPitch), area.highPitch - area.lowPitch + 1),
-    gridColumn: span(stepColumn(area.fromStep), area.toStep - area.fromStep + 1),
-  }
-}
-
-function noteLabel(note: Note): string {
-  return `${pitchLabel(props.instrument, note.pitch)}, шаг ${note.step + 1}`
-}
-
-function draggedGroup(note: Note): readonly Note[] {
-  if (!isSelected(note)) {
-    emit('select', note.id)
-    return [note]
-  }
-  return props.pattern.notes.filter(isSelected)
-}
-
-function handleNotePointerDown(event: PointerEvent, note: Note, gesture: NoteGesture): void {
-  if (event.shiftKey) {
-    emit('toggle', note.id)
-    return
-  }
-  const group = draggedGroup(note)
-  if (gesture === 'resize') {
-    drag.startResize(event, group)
-  } else {
-    drag.startMove(event, group)
-  }
-}
-
-function handleCellPointerDown(event: PointerEvent, cell: NotePosition): void {
-  if (!event.shiftKey || !(event.currentTarget instanceof HTMLElement)) {
-    return
-  }
-  selection.start(event, cell, event.currentTarget.getBoundingClientRect())
-}
-
-function handleCellClick(event: MouseEvent, cell: NotePosition): void {
-  if (!event.shiftKey) {
-    emit('add', cell)
-  }
-}
 </script>

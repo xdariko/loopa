@@ -1,10 +1,5 @@
 <template>
-  <svg
-    class="pattern-preview"
-    :viewBox="`0 0 ${pattern.steps} ${range.max - range.min + 1}`"
-    preserveAspectRatio="none"
-    aria-hidden="true"
-  >
+  <svg class="pattern-preview" :viewBox="`0 0 ${pattern.steps} ${range.max - range.min + 1}`" preserveAspectRatio="none" aria-hidden="true" >
     <rect
       v-for="note in pattern.notes"
       :key="note.id"
@@ -22,17 +17,34 @@
   </svg>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
+import { defineComponent, type PropType } from 'vue'
+
 import { playbackNoteKey } from '@/audio/timeline'
 import { injectPlaybackCursor } from '@/composables/usePlaybackCursor'
 import type { PitchRange } from '@/domain/instruments'
 import type { Pattern } from '@/domain/types'
 
-defineProps<{
-  pattern: Pattern
-  range: PitchRange
-  playingTrackId?: string
-}>()
+export default defineComponent({
+  props: {
+    pattern: { type: Object as PropType<Pattern>, required: true },
+    range: { type: Object as PropType<PitchRange>, required: true },
+    playingTrackId: String,
+  },
 
-const { playingNoteIds } = injectPlaybackCursor()
+  setup() {
+    const playbackCursor = injectPlaybackCursor()
+    return { playbackCursor }
+  },
+
+  computed: {
+    playingNoteIds() {
+      return this.playbackCursor.playingNoteIds.value
+    },
+  },
+
+  methods: {
+    playbackNoteKey,
+  },
+})
 </script>

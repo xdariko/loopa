@@ -1,86 +1,65 @@
 import { defineStore } from 'pinia'
-import { computed, shallowRef } from 'vue'
+import { shallowRef } from 'vue'
 
 import { HISTORY_LIMIT } from '@/domain/constants'
 import { createProject } from '@/domain/factories'
 import * as projects from '@/domain/project'
 import type { Project } from '@/domain/types'
 
-export const useProjectStore = defineStore('project', () => {
-  const project = shallowRef<Project>(createProject())
-  const past = shallowRef<readonly Project[]>([])
-
-  const canUndo = computed(() => past.value.length > 0)
-
-  function change(update: (current: Project) => Project): boolean {
-    const next = update(project.value)
-    if (next === project.value) {
-      return false
+export const useProjectStore = defineStore('project', {
+  state() {
+    return {
+      project: shallowRef<Project>(createProject()),
+      past: shallowRef<readonly Project[]>([]),
     }
-    past.value = [...past.value, project.value].slice(-HISTORY_LIMIT)
-    project.value = next
-    return true
-  }
-
-  function undo(): void {
-    const previous = past.value[past.value.length - 1]
-    if (!previous) {
-      return
-    }
-    past.value = past.value.slice(0, -1)
-    project.value = previous
-  }
-
-  function load(next: Project): void {
-    project.value = next
-    past.value = []
-  }
-
-  function setBpm(bpm: number): boolean {
-    return change((current) => projects.setBpm(current, bpm))
-  }
-
-  function setSwing(swing: number): boolean {
-    return change((current) => projects.setSwing(current, swing))
-  }
-
-  function setTrackMuted(trackId: string, muted: boolean): boolean {
-    return change((current) => projects.setTrackMuted(current, trackId, muted))
-  }
-
-  function setTrackMixLevel(
-    trackId: string,
-    control: projects.TrackMixControl,
-    level: number,
-  ): boolean {
-    return change((current) => projects.setTrackMixLevel(current, trackId, control, level))
-  }
-
-  function rename(title: string): boolean {
-    return change((current) => projects.renameProject(current, title))
-  }
-
-  function appendArrangementBar(): void {
-    change(projects.appendArrangementBar)
-  }
-
-  function setArrangementPattern(trackId: string, bar: number, patternId: string | null): boolean {
-    return change((current) => projects.setArrangementPattern(current, trackId, bar, patternId))
-  }
-
-  return {
-    project,
-    past,
-    canUndo,
-    change,
-    undo,
-    load,
-    setBpm,
-    setSwing,
-    setTrackMuted,
-    setTrackMixLevel,
-    rename,
-    appendArrangementBar,
-    setArrangementPattern,
-  }
+  },
+  getters: {
+    canUndo: (state) => state.past.length > 0,
+  },
+  actions: {
+    change(update: (current: Project) => Project): boolean {
+      const next = update(this.project)
+      if (next === this.project) {
+        return false
+      }
+      this.past = [...this.past, this.project].slice(-HISTORY_LIMIT)
+      this.project = next
+      return true
+    },
+    undo(): void {
+      const previous = this.past[this.past.length - 1]
+      if (!previous) {
+        return
+      }
+      this.past = this.past.slice(0, -1)
+      this.project = previous
+    },
+    load(next: Project): void {
+      this.project = next
+      this.past = []
+    },
+    setBpm(bpm: number): boolean {
+      return this.change((current) => projects.setBpm(current, bpm))
+    },
+    setSwing(swing: number): boolean {
+      return this.change((current) => projects.setSwing(current, swing))
+    },
+    setTrackMuted(trackId: string, muted: boolean): boolean {
+      return this.change((current) => projects.setTrackMuted(current, trackId, muted))
+    },
+    setTrackMixLevel(trackId: string, control: projects.TrackMixControl, level: number): boolean {
+      return this.change((current) => projects.setTrackMixLevel(current, trackId, control, level))
+    },
+    rename(title: string): boolean {
+      return this.change((current) => projects.renameProject(current, title))
+    },
+    appendArrangementBar(): void {
+      this.change(projects.appendArrangementBar)
+    },
+    setArrangementPattern(trackId: string, bar: number, patternId: string | null): boolean {
+      return this.change((current) =>
+        projects.setArrangementPattern(current, trackId, bar, patternId),
+      )
+    },
+  },
 })

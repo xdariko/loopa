@@ -10,24 +10,26 @@
         </h1>
         <p>
           Loopa — музыкальный секвенсор в браузере.
-          <span
-            >Расставляй ноты на сетке, добавляй свои звуки и собирай композицию из паттернов.</span
+          <span>Расставляй ноты на сетке, добавляй свои звуки и собирай композицию из паттернов.</span
           >
         </p>
         <div class="home__actions">
           <RouterLink :to="{ name: 'editor' }" class="home__button home__button--primary">
             Открыть редактор
           </RouterLink>
+
           <RouterLink :to="{ name: 'account' }" class="home__button">
             Войти или зарегистрироваться
           </RouterLink>
         </div>
       </div>
+
       <div class="home__demo">
         <div class="home__preview" aria-hidden="true">
           <div class="home__ruler">
             <span v-for="beat in 4" :key="beat">{{ beat }}</span>
           </div>
+
           <div class="home__instrument">
             <div class="home__keys">
               <span
@@ -38,16 +40,13 @@
                 {{ pitch }}
               </span>
             </div>
+
             <div class="home__roll">
               <span
-                v-for="([row, start, length], index) in notes"
+                v-for="(style, index) in noteStyles"
                 :key="index"
                 class="home__note"
-                :style="{
-                  gridRow: row,
-                  gridColumn: `${start} / span ${length}`,
-                  '--note-start': `${(start - 1) * 250}ms`,
-                }"
+                :style="style"
               />
               <span class="home__playhead" />
             </div>
@@ -58,19 +57,36 @@
   </div>
 </template>
 
-<script setup lang="ts">
-const pitches = ['E4', 'D#4', 'D4', 'C#4', 'C4', 'B3', 'A#3', 'A3', 'G#3', 'G3']
+<script lang="ts">
+import { defineComponent } from 'vue'
 
-const notes = [
-  [6, 1, 3],
-  [4, 4, 2],
-  [3, 6, 3],
-  [5, 9, 2],
-  [2, 11, 2],
-  [3, 13, 4],
-  [9, 1, 4],
-  [8, 5, 4],
-  [7, 9, 4],
-  [8, 13, 4],
-] as const
+export default defineComponent({
+  data() {
+    return {
+      pitches: ['E4', 'D#4', 'D4', 'C#4', 'C4', 'B3', 'A#3', 'A3', 'G#3', 'G3'],
+      notes: [
+        [6, 1, 3],
+        [4, 4, 2],
+        [3, 6, 3],
+        [5, 9, 2],
+        [2, 11, 2],
+        [3, 13, 4],
+        [9, 1, 4],
+        [8, 5, 4],
+        [7, 9, 4],
+        [8, 13, 4],
+      ] as const,
+    }
+  },
+
+  computed: {
+    noteStyles() {
+      return this.notes.map(([row, start, length]) => ({
+        gridRow: row,
+        gridColumn: start + ' / span ' + length,
+        '--note-start': (start - 1) * 250 + 'ms',
+      }))
+    },
+  },
+})
 </script>

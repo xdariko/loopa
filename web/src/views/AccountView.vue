@@ -11,6 +11,7 @@
         <p>{{ email }}</p>
         <div class="page__actions">
           <RouterLink to="/projects" class="page__button">Мои проекты</RouterLink>
+
           <RouterLink to="/editor" class="page__button">Открыть редактор</RouterLink>
           <button type="button" class="page__button" :disabled="disabled" @click="logout">
             Выйти
@@ -28,6 +29,7 @@
             required
           />
         </label>
+
         <label>
           Пароль
           <input
@@ -38,10 +40,12 @@
             required
           />
         </label>
+
         <label v-if="registering">
           Повторите пароль
           <input v-model="confirmation" type="password" autocomplete="new-password" required />
         </label>
+
         <div class="page__actions">
           <button class="page__button page__button--primary" type="submit" :disabled="disabled">
             {{ registering ? 'Создать аккаунт' : 'Войти' }}
@@ -55,106 +59,132 @@
   </section>
 </template>
 
-<script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { onBeforeRouteLeave } from 'vue-router'
+<script lang="ts">
+import { defineComponent } from 'vue'
 
 import { authenticate, getAccount, signOut } from '@/api/account'
 import { useAccountStore } from '@/stores/account'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
-const persistence = useProjectPersistenceStore()
-const playback = usePlaybackStore()
-const { email } = storeToRefs(useAccountStore())
-const address = ref('')
-const password = ref('')
-const confirmation = ref('')
-const registering = ref(false)
-const loading = ref(true)
-const loadFailed = ref(false)
-const busy = ref(false)
-const error = ref('')
-const abort = new AbortController()
-const disabled = computed(() => busy.value || persistence.isSaving)
-
-onMounted(load)
-onBeforeUnmount(() => abort.abort())
-onBeforeRouteLeave(() => !busy.value)
-
-async function load(): Promise<void> {
-  loading.value = true
-  loadFailed.value = false
-  error.value = ''
-  try {
-    email.value = (await getAccount(abort.signal)).email
-  } catch (cause) {
-    if (!abort.signal.aborted) {
-      email.value = null
-      loadFailed.value = true
-      report(cause)
+export default defineComponent({
+  data() {
+    return {
+      persistence: useProjectPersistenceStore(),
+      playback: usePlaybackStore(),
+      account: useAccountStore(),
+      address: '',
+      password: '',
+      confirmation: '',
+      registering: false,
+      loading: true,
+      loadFailed: false,
+      busy: false,
+      error: '',
+      abort: new AbortController(),
     }
-  } finally {
-    loading.value = false
-  }
-}
+  },
 
-function toggleMode(): void {
-  registering.value = !registering.value
-  error.value = ''
-  password.value = ''
-  confirmation.value = ''
-}
+  computed: {
+    email() {
+      return this.account.email
+    },
 
-async function submit(): Promise<void> {
-  if (disabled.value) {
-    return
-  }
-  if (registering.value && password.value !== confirmation.value) {
-    error.value = 'Пароли не совпадают.'
-    return
-  }
-  busy.value = true
-  error.value = ''
-  try {
-    const account = await authenticate(
-      address.value,
-      password.value,
-      registering.value ? confirmation.value : undefined,
-    )
-    persistence.detachSavedProject()
-    email.value = account.email
-    address.value = ''
-    password.value = ''
-    confirmation.value = ''
-    registering.value = false
-  } catch (cause) {
-    report(cause)
-  } finally {
-    busy.value = false
-  }
-}
+    disabled() {
+      return this.busy || this.persistence.isSaving
+    },
+  },
 
-async function logout(): Promise<void> {
-  if (disabled.value || (persistence.isDirty && !window.confirm('Выйти без сохранения проекта?'))) {
-    return
-  }
-  busy.value = true
-  error.value = ''
-  try {
-    await signOut()
-    playback.reset()
-    persistence.startNew()
-    email.value = null
-  } catch (cause) {
-    report(cause)
-  } finally {
-    busy.value = false
-  }
-}
+  mounted() {
+    void this.load()
+  },
 
-function report(cause: unknown): void {
-  error.value = cause instanceof Error ? cause.message : 'Не удалось выполнить запрос.'
-}
+  beforeRouteLeave() {
+    return !this.busy
+  },
+
+  beforeUnmount() {
+    this.abort.abort()
+  },
+
+  methods: {
+    async load(): Promise<void> {
+      this.loading = true
+      this.loadFailed = false
+      this.error = ''
+      try {
+        this.account.email = (await getAccount(this.abort.signal)).email
+      } catch (cause) {
+        if (!this.abort.signal.aborted) {
+          this.account.email = null
+          this.loadFailed = true
+          this.report(cause)
+        }
+      } finally {
+        this.loading = false
+      }
+    },
+
+    toggleMode(): void {
+      this.registering = !this.registering
+      this.error = ''
+      this.password = ''
+      this.confirmation = ''
+    },
+
+    async submit(): Promise<void> {
+      if (this.disabled) {
+        return
+      }
+      if (this.registering && this.password !== this.confirmation) {
+        this.error = 'Пароли не совпадают.'
+        return
+      }
+      this.busy = true
+      this.error = ''
+      try {
+        const account = await authenticate(
+          this.address,
+          this.password,
+          this.registering ? this.confirmation : undefined,
+        )
+        this.persistence.detachSavedProject()
+        this.account.email = account.email
+        this.address = ''
+        this.password = ''
+        this.confirmation = ''
+        this.registering = false
+      } catch (cause) {
+        this.report(cause)
+      } finally {
+        this.busy = false
+      }
+    },
+
+    async logout(): Promise<void> {
+      if (
+        this.disabled ||
+        (this.persistence.isDirty && !window.confirm('Выйти без сохранения проекта?'))
+      ) {
+        return
+      }
+      this.busy = true
+      this.error = ''
+      try {
+        await signOut()
+        this.playback.reset()
+        this.persistence.startNew()
+        this.account.email = null
+      } catch (cause) {
+        this.report(cause)
+      } finally {
+        this.busy = false
+      }
+    },
+
+    report(cause: unknown): void {
+      this.error = cause instanceof Error ? cause.message : 'Не удалось выполнить запрос.'
+    },
+  },
+})
 </script>

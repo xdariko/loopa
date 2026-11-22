@@ -1,20 +1,31 @@
 <template>
-  <div
-    v-if="position !== null && position <= steps"
-    class="playhead"
-    aria-hidden="true"
-    data-testid="playhead"
-  >
-    <div class="playhead__line" :style="{ '--playhead-progress': position / steps }" />
+  <div v-if="playheadStyle" class="playhead" aria-hidden="true" data-testid="playhead">
+    <div class="playhead__line" :style="playheadStyle" />
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
+import { defineComponent } from 'vue'
+
 import { injectPlaybackCursor } from '@/composables/usePlaybackCursor'
 
-defineProps<{
-  steps: number
-}>()
+export default defineComponent({
+  props: {
+    steps: { type: Number, required: true },
+  },
 
-const { position } = injectPlaybackCursor()
+  setup() {
+    const playbackCursor = injectPlaybackCursor()
+    return { playbackCursor }
+  },
+
+  computed: {
+    playheadStyle() {
+      const position = this.playbackCursor.position.value
+      return position !== null && position <= this.steps
+        ? { '--playhead-progress': position / this.steps }
+        : null
+    },
+  },
+})
 </script>
