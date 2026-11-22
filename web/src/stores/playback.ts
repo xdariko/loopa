@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { getAudioEngine } from '@/audio/engine'
 import { createScheduler, stepDuration, type ScheduledStep } from '@/audio/scheduler'
@@ -7,7 +7,7 @@ import type { SpectrumSource } from '@/audio/spectrum'
 import { playbackNoteKey, PlaybackTimeline, type TimelineSnapshot } from '@/audio/timeline'
 import { STEPS_PER_BAR } from '@/domain/constants'
 import { notesStartingAt } from '@/domain/notes'
-import type { Pattern } from '@/domain/types'
+import type { Pattern, Project } from '@/domain/types'
 
 import { useEditorStore } from './editor'
 import { useProjectStore } from './project'
@@ -22,22 +22,25 @@ export const usePlaybackStore = defineStore('playback', () => {
 
   const isPlaying = ref(false)
   const mode = ref<PlaybackMode>('composition')
+  const preview = shallowRef<Project | null>(null)
+  const activeProject = computed(() => preview.value ?? projectStore.project)
+  const activeMode = computed(() => (preview.value ? 'composition' : mode.value))
   const timeline = new PlaybackTimeline()
   let playRequest = 0
 
   const scheduler = createScheduler({
     now: () => engine.currentTime,
-    tempo: () => ({ bpm: projectStore.project.bpm, swing: projectStore.project.swing }),
+    tempo: () => ({ bpm: activeProject.value.bpm, swing: activeProject.value.swing }),
     loopLength: () =>
-      mode.value === 'composition'
-        ? projectStore.project.arrangement.barCount * STEPS_PER_BAR
+      activeMode.value === 'composition'
+        ? activeProject.value.arrangement.barCount * STEPS_PER_BAR
         : (editor.selectedPattern?.steps ?? STEPS_PER_BAR),
     onStep: playStep,
   })
 
   function playStep(scheduled: ScheduledStep): void {
     const playingPatterns = new Map<string, string>()
-    if (mode.value === 'pattern') {
+    if (activeMode.value === 'pattern') {
       const track = editor.selectedTrack
       const pattern = editor.selectedPattern
       if (track && pattern) {
@@ -50,7 +53,7 @@ export const usePlaybackStore = defineStore('playback', () => {
     } else {
       const bar = Math.floor(scheduled.step / STEPS_PER_BAR)
       const step = { ...scheduled, step: scheduled.step % STEPS_PER_BAR }
-      const { tracks, arrangement } = projectStore.project
+      const { tracks, arrangement } = activeProject.value
       for (const track of tracks) {
         const patternId = arrangement.lanes[track.id]?.[bar]
         const pattern = track.patterns.find((pattern) => pattern.id === patternId)
@@ -92,13 +95,13 @@ export const usePlaybackStore = defineStore('playback', () => {
   }
 
   watch(
-    () => projectStore.project.tracks,
+    () => activeProject.value.tracks,
     (tracks) => engine.syncTracks(tracks),
     { immediate: true },
   )
 
   watch(
-    () => projectStore.project.bpm,
+    () => activeProject.value.bpm,
     (bpm) => engine.setDelayTime(stepDuration(bpm) * DELAY_STEPS),
     { immediate: true },
   )
@@ -137,6 +140,18 @@ export const usePlaybackStore = defineStore('playback', () => {
     }
   }
 
+  function setPreview(project: Project | null): void {
+    if (preview.value !== project) {
+      reset()
+      preview.value = project
+    }
+  }
+
+  function reset(): void {
+    pause()
+    scheduler.reset()
+  }
+
   async function toggle(): Promise<void> {
     if (isPlaying.value) {
       pause()
@@ -145,5 +160,5 @@ export const usePlaybackStore = defineStore('playback', () => {
     }
   }
 
-  return { isPlaying, mode, setMode, play, pause, toggle, sample, spectrum }
+  return { isPlaying, mode, setMode, setPreview, play, pause, reset, toggle, sample, spectrum }
 })

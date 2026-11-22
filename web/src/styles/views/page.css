@@ -1,4 +1,6 @@
 .page {
+  height: 100%;
+  overflow: auto;
   max-width: 720px;
   margin: 0 auto;
   padding: var(--space-5) var(--space-4);
@@ -11,4 +13,53 @@
 
 .page__hint {
   color: var(--color-text-muted);
+}
+
+.page__error {
+  margin-bottom: var(--space-2);
+  color: var(--color-danger);
+}
+
+.page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.page__button {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.page__button--primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.page__button:disabled {
+  opacity: 0.5;
+}
+
+.page__list {
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.page__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.page__project {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

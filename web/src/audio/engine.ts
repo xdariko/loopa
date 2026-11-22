@@ -70,6 +70,12 @@ export class AudioEngine {
   }
 
   async importSample(file: File, signal: AbortSignal): Promise<string> {
+    const id = crypto.randomUUID()
+    await this.restoreSample(id, file, signal)
+    return id
+  }
+
+  async restoreSample(id: string, file: File, signal: AbortSignal): Promise<void> {
     const bytes = await readSampleFile(file)
     signal.throwIfAborted()
 
@@ -82,9 +88,7 @@ export class AudioEngine {
       )
     }
     signal.throwIfAborted()
-    const id = crypto.randomUUID()
     this.samples.set(id, { file, buffer })
-    return id
   }
 
   getSampleFile(sampleId: string): File | undefined {

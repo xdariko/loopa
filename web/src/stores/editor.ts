@@ -60,7 +60,7 @@ export const useEditorStore = defineStore('editor', () => {
     )
   }
 
-  function selectTrack(trackId: string): void {
+  function selectTrack(trackId: string | null): void {
     selectedTrackId.value = trackId
     selectedPatternId.value = null
     clearSelection()
