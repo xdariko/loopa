@@ -30,3 +30,13 @@ npm run dev
 | `npm run format` | форматирование кода |
 | `npm run build` | проверка типов и сборка в `web/dist` |
 | `npm run preview` | просмотр собранной версии |
+
+## Rails API
+
+```sh
+cd api
+bundle install
+ruby bin/rails db:prepare
+ruby bin/rails server -b 127.0.0.1
+```
+

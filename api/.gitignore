@@ -1,0 +1,12 @@
+/.bundle/
+/.env*
+/config/master.key
+/config/credentials.yml.enc
+/config/credentials/*.key
+/log/*
+!/log/.keep
+/storage/*
+!/storage/.keep
+/tmp/*
+!/tmp/.keep
+/vendor/bundle/
