@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
-import type { TimelineSnapshot } from '@/audio/timeline'
+import { IDLE_SNAPSHOT, type TimelineSnapshot } from '@/audio/timeline'
 import { usePlaybackCursor } from '@/composables/usePlaybackCursor'
 
 const FRAME_MS = 16
@@ -31,7 +31,9 @@ describe('usePlaybackCursor', () => {
 
   it('samples the timeline on every frame only while active', async () => {
     const { active, sample, cursor } = create(() => ({
+      ...IDLE_SNAPSHOT,
       position: 2.5,
+      bar: 1,
       soundingNoteIds: new Set(['a']),
     }))
 
@@ -44,6 +46,7 @@ describe('usePlaybackCursor', () => {
 
     expect(sample).toHaveBeenCalled()
     expect(cursor.position.value).toBe(2.5)
+    expect(cursor.bar.value).toBe(1)
     expect([...cursor.playingNoteIds.value]).toEqual(['a'])
 
     active.value = false
@@ -53,11 +56,13 @@ describe('usePlaybackCursor', () => {
 
     expect(sample).toHaveBeenCalledTimes(calls)
     expect(cursor.position.value).toBeNull()
+    expect(cursor.bar.value).toBeNull()
     expect(cursor.playingNoteIds.value.size).toBe(0)
   })
 
   it('keeps the same set while the sounding notes do not change', async () => {
     const { active, cursor } = create(() => ({
+      ...IDLE_SNAPSHOT,
       position: 0,
       soundingNoteIds: new Set(['a']),
     }))

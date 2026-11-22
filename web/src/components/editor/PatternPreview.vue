@@ -9,7 +9,11 @@
       v-for="note in pattern.notes"
       :key="note.id"
       class="pattern-preview__note"
-      :class="{ 'pattern-preview__note--playing': playing && playingNoteIds.has(note.id) }"
+      :class="{
+        'pattern-preview__note--playing':
+          playingTrackId !== undefined &&
+          playingNoteIds.has(playbackNoteKey(playingTrackId, pattern.id, note.id)),
+      }"
       :x="note.step"
       :y="range.max - note.pitch"
       :width="note.duration"
@@ -19,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import { playbackNoteKey } from '@/audio/timeline'
 import { injectPlaybackCursor } from '@/composables/usePlaybackCursor'
 import type { PitchRange } from '@/domain/instruments'
 import type { Pattern } from '@/domain/types'
@@ -26,7 +31,7 @@ import type { Pattern } from '@/domain/types'
 defineProps<{
   pattern: Pattern
   range: PitchRange
-  playing: boolean
+  playingTrackId?: string
 }>()
 
 const { playingNoteIds } = injectPlaybackCursor()

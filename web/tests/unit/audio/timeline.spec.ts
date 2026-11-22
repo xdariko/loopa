@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { PlaybackTimeline } from '@/audio/timeline'
+import { IDLE_SNAPSHOT, PlaybackTimeline } from '@/audio/timeline'
 
 const STEP = 0.125
 
@@ -50,6 +50,6 @@ describe('PlaybackTimeline', () => {
 
     timeline.clear()
 
-    expect(timeline.advanceTo(1.1)).toEqual({ position: null, soundingNoteIds: new Set() })
+    expect(timeline.advanceTo(1.1)).toEqual(IDLE_SNAPSHOT)
   })
 })

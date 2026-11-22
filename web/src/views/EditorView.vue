@@ -14,10 +14,12 @@
       <TransportBar
         :is-playing="playback.isPlaying"
         :bpm="projectStore.project.bpm"
+        :mode="playback.mode"
         :patterns="editor.selectedTrack?.patterns"
         :selected-pattern-id="editor.selectedPattern?.id"
         @toggle="playback.toggle"
         @bpm-change="projectStore.setBpm"
+        @mode-change="playback.setMode"
         @select-pattern="editor.selectPattern"
         @create-pattern="editor.createSelectedTrackPattern"
         @duplicate-pattern="editor.duplicateSelectedPattern"
@@ -33,6 +35,7 @@
           :instrument="editor.selectedTrack.instrument"
           :selected-note-ids="editor.selectedNoteIds"
           :playing-note-ids="playingNoteIds"
+          :hide-playhead="!isSelectedPatternPlaying"
           @add="editor.addNote"
           @select="editor.selectNote"
           @toggle="editor.toggleNoteSelection"
@@ -47,7 +50,6 @@
         :tracks="projectStore.project.tracks"
         :arrangement="projectStore.project.arrangement"
         :selected-track-id="editor.selectedTrack?.id ?? null"
-        :selected-pattern="editor.selectedPattern"
         @open="openArrangementPattern"
         @assign="projectStore.setArrangementPattern"
         @create="editor.createPatternInBar"
@@ -57,8 +59,9 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 
+import { playbackNoteKey } from '@/audio/timeline'
 import TrackPanel from '@/components/editor/TrackPanel.vue'
 import TransportBar from '@/components/editor/TransportBar.vue'
 import PatternGrid from '@/components/editor/PatternGrid.vue'
@@ -75,7 +78,30 @@ const projectStore = useProjectStore()
 const playback = usePlaybackStore()
 
 const cursor = usePlaybackCursor({ active: () => playback.isPlaying, sample: playback.sample })
-const { playingNoteIds } = cursor
+const isSelectedPatternPlaying = computed(() => {
+  const { selectedTrack, selectedPattern } = editor
+  return (
+    selectedTrack !== null &&
+    selectedPattern !== null &&
+    cursor.patterns.value.get(selectedTrack.id) === selectedPattern.id
+  )
+})
+const playingNoteIds = computed(() => {
+  const { selectedTrack, selectedPattern } = editor
+  const ids = new Set<string>()
+  if (isSelectedPatternPlaying.value && selectedTrack && selectedPattern) {
+    for (const note of selectedPattern.notes) {
+      if (
+        cursor.playingNoteIds.value.has(
+          playbackNoteKey(selectedTrack.id, selectedPattern.id, note.id),
+        )
+      ) {
+        ids.add(note.id)
+      }
+    }
+  }
+  return ids
+})
 providePlaybackCursor(cursor)
 
 onBeforeUnmount(playback.pause)

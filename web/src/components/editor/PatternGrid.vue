@@ -49,7 +49,11 @@
         />
       </button>
 
-      <PatternPlayhead :steps="pattern.steps" :style="playheadPlacement" />
+      <PatternPlayhead
+        v-if="!hidePlayhead"
+        :steps="pattern.steps"
+        :style="playheadPlacement"
+      />
 
       <div
         v-if="selectionArea"
@@ -87,6 +91,7 @@ const props = defineProps<{
   instrument: Instrument
   selectedNoteIds: readonly string[]
   playingNoteIds?: ReadonlySet<string>
+  hidePlayhead?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -56,7 +56,11 @@
                 <PatternPreview
                   :pattern="pattern"
                   :range="row.range"
-                  :playing="row.track.id === selectedTrackId && bar === playbackBar"
+                  :playing-track-id="
+                    bar === playbackBar && playingPatterns.get(row.track.id) === pattern.id
+                      ? row.track.id
+                      : undefined
+                  "
                 />
               </button>
               <button
@@ -87,11 +91,11 @@
           </div>
         </div>
         <div
-          v-if="playbackBar !== null && selectedPattern"
+          v-if="playbackBar !== null"
           class="arrangement__playback"
           :style="{ '--arrangement-playback-bar': playbackBar }"
         >
-          <PatternPlayhead :steps="selectedPattern.steps" />
+          <PatternPlayhead :steps="STEPS_PER_BAR" />
         </div>
       </div>
     </div>
@@ -121,11 +125,7 @@
             @click="assignPattern(pattern.id)"
           >
             <span class="arrangement__thumbnail">
-              <PatternPreview
-                :pattern="pattern"
-                :range="pitchRangeFor(pickerTrack.instrument)"
-                :playing="false"
-              />
+              <PatternPreview :pattern="pattern" :range="pitchRangeFor(pickerTrack.instrument)" />
             </span>
             Паттерн {{ index + 1 }}
           </button>
@@ -162,14 +162,15 @@ import {
 
 import PatternPlayhead from '@/components/editor/PatternPlayhead.vue'
 import PatternPreview from '@/components/editor/PatternPreview.vue'
+import { injectPlaybackCursor } from '@/composables/usePlaybackCursor'
+import { STEPS_PER_BAR } from '@/domain/constants'
 import { pitchRangeFor } from '@/domain/instruments'
-import type { Arrangement, Pattern, Track } from '@/domain/types'
+import type { Arrangement, Track } from '@/domain/types'
 
 const props = defineProps<{
   tracks: readonly Track[]
   arrangement: Arrangement
   selectedTrackId: string | null
-  selectedPattern: Pattern | null
 }>()
 
 const emit = defineEmits<{
@@ -192,6 +193,7 @@ const PICKER_WIDTH = 280
 const PICKER_GAP = 8
 
 const expanded = ref(false)
+const { bar: playbackBar, patterns: playingPatterns } = injectPlaybackCursor()
 const activeCell = shallowRef<Cell | null>(null)
 const picker = shallowRef<Picker | null>(null)
 const pickerElement = useTemplateRef<HTMLElement>('pickerElement')
@@ -229,17 +231,6 @@ const selectedCell = computed(() => {
     return null
   }
   return { track, bar: cell.bar, patternId }
-})
-
-const playbackBar = computed(() => {
-  if (props.selectedTrackId === null || !props.selectedPattern) {
-    return null
-  }
-  if (selectedCell.value?.patternId === props.selectedPattern.id) {
-    return selectedCell.value.bar
-  }
-  const bar = props.arrangement.lanes[props.selectedTrackId]?.indexOf(props.selectedPattern.id)
-  return bar === undefined || bar < 0 ? null : bar
 })
 
 function slotLabel(track: Track, bar: number, number: number | null): string {

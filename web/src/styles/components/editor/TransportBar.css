@@ -19,6 +19,27 @@
   color: #fff;
 }
 
+.transport__modes {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.transport__mode {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.transport__mode[aria-pressed='true'],
+.transport__mode:hover:enabled {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 .transport__field {
   display: flex;
   align-items: center;

@@ -181,7 +181,12 @@ describe('PatternGrid', () => {
     const position = shallowRef<number | null>(null)
     const Host = defineComponent({
       setup() {
-        providePlaybackCursor({ position, playingNoteIds: shallowRef(new Set()) })
+        providePlaybackCursor({
+          position,
+          bar: shallowRef(null),
+          patterns: shallowRef(new Map()),
+          playingNoteIds: shallowRef(new Set()),
+        })
         return () => h(PatternGrid, { pattern: pattern(), instrument: LEAD, selectedNoteIds: [] })
       },
     })

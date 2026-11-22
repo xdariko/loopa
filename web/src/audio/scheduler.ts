@@ -70,5 +70,9 @@ export function createScheduler(options: SchedulerOptions) {
     }
   }
 
-  return { start, stop }
+  function reset(): void {
+    nextStep = 0
+  }
+
+  return { start, stop, reset }
 }

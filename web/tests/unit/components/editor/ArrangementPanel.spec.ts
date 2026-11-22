@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, shallowRef } from 'vue'
 
+import { playbackNoteKey } from '@/audio/timeline'
 import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
 import { providePlaybackCursor } from '@/composables/usePlaybackCursor'
 import { createNote, createProject } from '@/domain/factories'
@@ -18,25 +19,27 @@ describe('ArrangementPanel playback', () => {
       notes: [note],
     }))
     const position = shallowRef<number | null>(null)
+    const bar = shallowRef<number | null>(null)
+    const patterns = shallowRef(new Map([[track.id, patternId]]))
     const playingNoteIds = shallowRef<ReadonlySet<string>>(new Set())
     const wrapper = mount(
       defineComponent({
         setup() {
-          providePlaybackCursor({ position, playingNoteIds })
+          providePlaybackCursor({ position, bar, patterns, playingNoteIds })
           return () =>
             h(ArrangementPanel, {
               tracks: project.tracks,
               arrangement: project.arrangement,
               selectedTrackId: track.id,
-              selectedPattern: project.tracks[0]!.patterns[0]!,
             })
         },
       }),
     )
     const blocks = wrapper.findAll('.arrangement__block')
-    await blocks[1]!.trigger('click')
+    await blocks[0]!.trigger('click')
+    bar.value = 1
     position.value = 4
-    playingNoteIds.value = new Set([note.id])
+    playingNoteIds.value = new Set([playbackNoteKey(track.id, patternId, note.id)])
     await nextTick()
 
     expect(wrapper.get('.arrangement__playback').attributes('style')).toContain(
@@ -49,6 +52,7 @@ describe('ArrangementPanel playback', () => {
     expect(wrapper.findAll('.pattern-preview__note--playing')).toHaveLength(1)
 
     position.value = null
+    bar.value = null
     playingNoteIds.value = new Set()
     await nextTick()
     expect(wrapper.find('.playhead').exists()).toBe(false)

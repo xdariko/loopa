@@ -10,6 +10,21 @@
       {{ isPlaying ? '❚❚' : '▶' }}
     </button>
 
+    <div v-if="mode" class="transport__modes" role="group" aria-label="Режим воспроизведения">
+      <button
+        v-for="option in playbackModes"
+        :key="option.value"
+        type="button"
+        class="transport__mode"
+        :aria-pressed="mode === option.value"
+        :disabled="isPlaying"
+        @keydown.space.stop
+        @click="emit('modeChange', option.value)"
+      >
+        {{ option.label }}
+      </button>
+    </div>
+
     <label class="transport__field">
       <span class="transport__label">BPM</span>
       <input
@@ -67,10 +82,17 @@ import { nextTick } from 'vue'
 
 import { MAX_BPM, MIN_BPM } from '@/domain/constants'
 import type { Pattern } from '@/domain/types'
+import type { PlaybackMode } from '@/stores/playback'
+
+const playbackModes: readonly { value: PlaybackMode; label: string }[] = [
+  { value: 'composition', label: 'Композиция' },
+  { value: 'pattern', label: 'Паттерн' },
+]
 
 const props = defineProps<{
   isPlaying: boolean
   bpm: number
+  mode?: PlaybackMode
   patterns?: readonly Pattern[]
   selectedPatternId?: string
 }>()
@@ -78,6 +100,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: []
   bpmChange: [bpm: number]
+  modeChange: [mode: PlaybackMode]
   selectPattern: [patternId: string]
   createPattern: []
   duplicatePattern: []
