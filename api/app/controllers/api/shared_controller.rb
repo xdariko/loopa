@@ -1,5 +1,7 @@
 module Api
   class SharedController < BaseController
+    before_action :require_account, only: :copy
+
     def show
       render json: shared_details(shared_project)
     end

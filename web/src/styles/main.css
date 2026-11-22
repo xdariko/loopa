@@ -13,4 +13,5 @@
 @import './components/editor/PatternPreview.css';
 
 @import './views/EditorView.css';
+@import './views/HomeView.css';
 @import './views/page.css';

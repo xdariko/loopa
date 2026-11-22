@@ -8,6 +8,7 @@
         {{ playback.isPlaying ? 'Пауза' : 'Воспроизвести' }}
       </button>
       <button
+        v-if="!accountRequired"
         type="button"
         class="page__button"
         :disabled="copying || persistence.isSaving"
@@ -15,6 +16,9 @@
       >
         {{ copying ? 'Копируем…' : 'Сделать копию' }}
       </button>
+      <RouterLink v-else to="/account" class="page__button"
+        >Войти или зарегистрироваться</RouterLink
+      >
     </div>
   </section>
 </template>
@@ -23,7 +27,7 @@
 import { onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { copySharedProject, getSharedProject } from '@/api/projects'
+import { AccountRequiredError, copySharedProject, getSharedProject } from '@/api/projects'
 import type { Project } from '@/domain/types'
 import { usePlaybackStore } from '@/stores/playback'
 import { prepareProject, useProjectPersistenceStore } from '@/stores/projectPersistence'
@@ -35,6 +39,7 @@ const persistence = useProjectPersistenceStore()
 const project = shallowRef<Project | null>(null)
 const loading = ref(true)
 const copying = ref(false)
+const accountRequired = ref(false)
 const error = ref('')
 let controller = new AbortController()
 
@@ -48,6 +53,7 @@ watch(
     project.value = null
     playback.setPreview(null)
     loading.value = true
+    accountRequired.value = false
     error.value = ''
     try {
       const remote = await getSharedProject(token, signal)
@@ -92,6 +98,7 @@ async function makeCopy(): Promise<void> {
     await router.push({ name: 'editor' })
   } catch (reason) {
     if (!signal.aborted) {
+      accountRequired.value = reason instanceof AccountRequiredError
       error.value = reason instanceof Error ? reason.message : 'Не удалось сделать копию.'
     }
   } finally {

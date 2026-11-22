@@ -16,9 +16,16 @@ async function mountAt(path: string) {
 
 describe('App', () => {
   afterEach(() => vi.unstubAllGlobals())
-  it('renders the editor layout on /', async () => {
+  it('links from the home page to the account and editor', async () => {
     const wrapper = await mountAt('/')
 
+    expect(wrapper.get('h1').text()).toBe('Собери свой луп')
+    expect(wrapper.get('footer a').attributes('href')).toBe('https://github.com/xdariko/loopa')
+    expect(wrapper.get('a[href="/account"]').text()).toBe('Войти или зарегистрироваться')
+    await wrapper.get('a[href="/editor"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.name).toBe('editor')
+    expect(wrapper.find('footer').exists()).toBe(false)
     expect(wrapper.find('header').text()).toContain('loopa')
     expect(wrapper.text()).toContain('Дорожки')
     expect(wrapper.find('[data-testid="grid-area"]').exists()).toBe(true)
@@ -51,6 +58,25 @@ describe('App', () => {
     expect(fetchProject.mock.calls[1]?.[1].headers.get('X-Loopa-Request')).toBe('1')
     expect(wrapper.get<HTMLInputElement>('.header__title').element.value).toBe('Shared loop')
     expect(wrapper.text()).toContain('Скопировать ссылку')
+    wrapper.unmount()
+  })
+
+  it('keeps the editor available to guests and prompts them to sign in for saved projects', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation(() => new Response(null, { status: 401 })),
+    )
+    const wrapper = await mountAt('/editor')
+
+    expect(wrapper.find('[data-testid="grid-area"]').exists()).toBe(true)
+    await wrapper.get('.header__button').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('.header__feedback a').attributes('href')).toBe('/account')
+
+    await router.push('/projects')
+    await flushPromises()
+    expect(wrapper.find('.page__list').exists()).toBe(false)
+    expect(wrapper.get('main a').attributes('href')).toBe('/account')
     wrapper.unmount()
   })
 

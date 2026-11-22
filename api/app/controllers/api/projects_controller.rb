@@ -1,5 +1,6 @@
 module Api
   class ProjectsController < BaseController
+    before_action :require_account
     wrap_parameters false
 
     def index

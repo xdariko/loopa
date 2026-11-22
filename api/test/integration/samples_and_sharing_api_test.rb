@@ -4,11 +4,11 @@ class SamplesAndSharingApiTest < ActionDispatch::IntegrationTest
   include ActiveJob::TestHelper
 
   setup do
-    @project = Project.create!(title: "Loop", data: { version: 1 })
+    @project = register_project_owner.projects.create!(title: "Loop", data: { version: 1 })
   end
 
   test "uploads a WAV and serves it through the project responses" do
-    post "/api/projects/#{@project.id}/samples", params: { file: wav_upload }
+    post "/api/projects/#{@project.id}/samples", params: { file: wav_upload }, headers: BROWSER_WRITE_HEADERS
 
     assert_response :created
     sample = response.parsed_body
@@ -28,7 +28,7 @@ class SamplesAndSharingApiTest < ActionDispatch::IntegrationTest
   test "accepts MP3 content independently of the browser content type" do
     mp3 = "\xFF\xFB\x90\x64".b + ("\0" * 413)
     post "/api/projects/#{@project.id}/samples",
-      params: { file: upload(mp3, "application/octet-stream", "beat.mp3") }
+      params: { file: upload(mp3, "application/octet-stream", "beat.mp3") }, headers: BROWSER_WRITE_HEADERS
 
     assert_response :created
     assert_equal "audio/mpeg", @project.samples.blobs.first.content_type
@@ -36,12 +36,12 @@ class SamplesAndSharingApiTest < ActionDispatch::IntegrationTest
 
   test "rejects a fake WAV and an oversized file with useful errors" do
     post "/api/projects/#{@project.id}/samples",
-      params: { file: upload("fake wave", "audio/wav", "fake.wav") }
+      params: { file: upload("fake wave", "audio/wav", "fake.wav") }, headers: BROWSER_WRITE_HEADERS
     assert_response :unprocessable_content
     assert_includes response.parsed_body.dig("errors", "samples"), "must be WAV or MP3"
 
     post "/api/projects/#{@project.id}/samples",
-      params: { file: upload("a" * (5.megabytes + 1), "audio/mpeg", "large.mp3") }
+      params: { file: upload("a" * (5.megabytes + 1), "audio/mpeg", "large.mp3") }, headers: BROWSER_WRITE_HEADERS
     assert_response :unprocessable_content
     assert_includes response.parsed_body.dig("errors", "samples"), "must be 5 MB or smaller"
     assert_not @project.samples.attached?
@@ -59,13 +59,13 @@ class SamplesAndSharingApiTest < ActionDispatch::IntegrationTest
   end
 
   test "copies a shared project with sound that stays available after deleting the source" do
-    post "/api/projects/#{@project.id}/samples", params: { file: wav_upload }
+    post "/api/projects/#{@project.id}/samples", params: { file: wav_upload }, headers: BROWSER_WRITE_HEADERS
     sample = response.parsed_body
     document = { version: 1, tracks: [{ instrument: { kind: "sample", sampleId: sample.fetch("id") } }] }
     @project.update!(data: document)
     token = @project.share_token
 
-    post "/api/shared/#{token}/copy"
+    post "/api/shared/#{token}/copy", headers: BROWSER_WRITE_HEADERS
     assert_response :created
     copied = response.parsed_body
     assert_not_equal @project.id, copied["id"]
@@ -74,7 +74,7 @@ class SamplesAndSharingApiTest < ActionDispatch::IntegrationTest
     assert_equal [sample], copied["samples"]
 
     perform_enqueued_jobs do
-      delete "/api/projects/#{@project.id}"
+      delete "/api/projects/#{@project.id}", headers: BROWSER_WRITE_HEADERS
     end
     assert_response :no_content
 

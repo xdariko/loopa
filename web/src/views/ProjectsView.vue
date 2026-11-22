@@ -4,7 +4,12 @@
     <p v-if="loading" class="page__hint" role="status">Загружаем проекты…</p>
     <p v-else-if="!error && !projects.length" class="page__hint">Сохранённых проектов пока нет.</p>
     <p v-if="error" class="page__error" role="alert">{{ error }}</p>
-    <button v-if="loadFailed" type="button" class="page__button" @click="refresh">Повторить</button>
+    <RouterLink v-if="accountRequired" to="/account" class="page__button">
+      Войти или зарегистрироваться
+    </RouterLink>
+    <button v-else-if="loadFailed" type="button" class="page__button" @click="refresh">
+      Повторить
+    </button>
     <ul v-if="projects.length" class="page__list">
       <li v-for="project in projects" :key="project.id" class="page__row">
         <div class="page__project">
@@ -30,7 +35,7 @@
 import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { getProject, listProjects, type ProjectSummary } from '@/api/projects'
+import { AccountRequiredError, getProject, listProjects, type ProjectSummary } from '@/api/projects'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
@@ -42,6 +47,7 @@ const projects = shallowRef<ProjectSummary[]>([])
 const loading = ref(false)
 const opening = ref<number | null>(null)
 const loadFailed = ref(false)
+const accountRequired = ref(false)
 const error = ref('')
 const dateFormat = new Intl.DateTimeFormat('ru', { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -51,11 +57,14 @@ onBeforeUnmount(() => controller.abort())
 async function refresh(): Promise<void> {
   loading.value = true
   loadFailed.value = false
+  accountRequired.value = false
   error.value = ''
   try {
     projects.value = await listProjects(controller.signal)
   } catch (reason) {
     if (!controller.signal.aborted) {
+      projects.value = []
+      accountRequired.value = reason instanceof AccountRequiredError
       error.value = reason instanceof Error ? reason.message : 'Не удалось загрузить проекты.'
       loadFailed.value = true
     }
@@ -77,6 +86,10 @@ async function open(id: number): Promise<void> {
     await router.push({ name: 'editor' })
   } catch (reason) {
     if (!controller.signal.aborted) {
+      if (reason instanceof AccountRequiredError) {
+        projects.value = []
+        accountRequired.value = true
+      }
       error.value = reason instanceof Error ? reason.message : 'Не удалось открыть проект.'
     }
   } finally {

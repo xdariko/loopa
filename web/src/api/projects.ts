@@ -42,6 +42,9 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
 
 async function request(path: string, init?: RequestInit): Promise<Response> {
   const response = await apiFetch(path, init)
+  if (response.status === 401) {
+    throw new AccountRequiredError('Войдите или зарегистрируйтесь, чтобы работать с проектами.')
+  }
   if (response.status === 404) {
     throw new Error('Проект или звуковой файл не найден.')
   }
@@ -53,6 +56,8 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
   }
   return response
 }
+
+export class AccountRequiredError extends Error {}
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
   return (await request(path, init)).json() as Promise<T>

@@ -7,6 +7,10 @@ module Api
 
     private
 
+    def require_account
+      head :unauthorized unless current_user
+    end
+
     def verify_browser_request
       return if request.get? || request.head?
       return if request.headers["Origin"].nil? && !cookies.key?(Authentication::SESSION_COOKIE)

@@ -1,48 +1,57 @@
 <template>
-  <section class="page">
-    <h1 class="page__title">{{ email ? 'Аккаунт' : registering ? 'Регистрация' : 'Вход' }}</h1>
-    <p v-if="error" class="page__error" role="alert">{{ error }}</p>
-    <p v-if="loading" class="page__hint" role="status">Проверяем аккаунт…</p>
-    <button v-else-if="loadFailed" type="button" class="page__button" @click="load">
-      Повторить
-    </button>
-    <template v-else-if="email">
-      <p>{{ email }}</p>
-      <div class="page__actions">
-        <RouterLink to="/projects" class="page__button">Мои проекты</RouterLink>
-        <button type="button" class="page__button" :disabled="disabled" @click="logout">
-          Выйти
-        </button>
-      </div>
-    </template>
-    <form v-else class="page__form" @submit.prevent="submit">
-      <label>
-        Электронная почта
-        <input v-model.trim="address" type="email" autocomplete="email" maxlength="254" required />
-      </label>
-      <label>
-        Пароль
-        <input
-          v-model="password"
-          type="password"
-          :autocomplete="registering ? 'new-password' : 'current-password'"
-          :minlength="registering ? 8 : undefined"
-          required
-        />
-      </label>
-      <label v-if="registering">
-        Повторите пароль
-        <input v-model="confirmation" type="password" autocomplete="new-password" required />
-      </label>
-      <div class="page__actions">
-        <button class="page__button page__button--primary" type="submit" :disabled="disabled">
-          {{ registering ? 'Создать аккаунт' : 'Войти' }}
-        </button>
-        <button type="button" class="page__button" :disabled="disabled" @click="toggleMode">
-          {{ registering ? 'Уже есть аккаунт' : 'Зарегистрироваться' }}
-        </button>
-      </div>
-    </form>
+  <section class="page page--account">
+    <div class="page__account-panel">
+      <h1 class="page__title">{{ email ? 'Аккаунт' : registering ? 'Регистрация' : 'Вход' }}</h1>
+      <p v-if="error" class="page__error" role="alert">{{ error }}</p>
+      <p v-if="loading" class="page__hint" role="status">Проверяем аккаунт…</p>
+      <button v-else-if="loadFailed" type="button" class="page__button" @click="load">
+        Повторить
+      </button>
+      <template v-else-if="email">
+        <p>{{ email }}</p>
+        <div class="page__actions">
+          <RouterLink to="/projects" class="page__button">Мои проекты</RouterLink>
+          <RouterLink to="/editor" class="page__button">Открыть редактор</RouterLink>
+          <button type="button" class="page__button" :disabled="disabled" @click="logout">
+            Выйти
+          </button>
+        </div>
+      </template>
+      <form v-else class="page__form" @submit.prevent="submit">
+        <label>
+          Электронная почта
+          <input
+            v-model.trim="address"
+            type="email"
+            autocomplete="email"
+            maxlength="254"
+            required
+          />
+        </label>
+        <label>
+          Пароль
+          <input
+            v-model="password"
+            type="password"
+            :autocomplete="registering ? 'new-password' : 'current-password'"
+            :minlength="registering ? 8 : undefined"
+            required
+          />
+        </label>
+        <label v-if="registering">
+          Повторите пароль
+          <input v-model="confirmation" type="password" autocomplete="new-password" required />
+        </label>
+        <div class="page__actions">
+          <button class="page__button page__button--primary" type="submit" :disabled="disabled">
+            {{ registering ? 'Создать аккаунт' : 'Войти' }}
+          </button>
+          <button type="button" class="page__button" :disabled="disabled" @click="toggleMode">
+            {{ registering ? 'Уже есть аккаунт' : 'Зарегистрироваться' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </section>
 </template>
 

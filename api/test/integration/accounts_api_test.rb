@@ -45,7 +45,16 @@ class AccountsApiTest < ActionDispatch::IntegrationTest
 
     guest = open_session
     guest.get project_path
-    assert_equal 404, guest.response.status
+    assert_equal 401, guest.response.status
+    guest.get "/api/projects"
+    assert_equal 401, guest.response.status
+    assert_no_difference "Project.count" do
+      guest.post "/api/projects", params: { project: { title: "Guest", data: { version: 1 } } },
+        headers: HEADERS, as: :json
+      assert_equal 401, guest.response.status
+      guest.post "/api/shared/#{token}/copy", headers: HEADERS
+      assert_equal 401, guest.response.status
+    end
     guest.get "/api/shared/#{token}"
     assert_equal 200, guest.response.status
 
