@@ -1,9 +1,23 @@
 module Api
   class BaseController < ApplicationController
+    before_action :verify_browser_request
+    before_action :no_store
     rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
     rescue_from ActionController::ParameterMissing, with: :render_bad_request
 
     private
+
+    def verify_browser_request
+      return if request.get? || request.head?
+      return if request.headers["Origin"].nil? && !cookies.key?(Authentication::SESSION_COOKIE)
+      return if request.headers["X-Loopa-Request"] == "1"
+
+      head :forbidden
+    end
+
+    def accessible_projects
+      Project.where(user: current_user)
+    end
 
     def project_summary(project)
       { id: project.id, title: project.title, updated_at: project.updated_at }

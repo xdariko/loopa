@@ -46,10 +46,39 @@ describe('App', () => {
     await flushPromises()
     expect(fetchProject.mock.calls[1]).toEqual([
       expect.stringMatching(/\/api\/shared\/abc123\/copy$/),
-      { method: 'POST' },
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
     ])
+    expect(fetchProject.mock.calls[1]?.[1].headers.get('X-Loopa-Request')).toBe('1')
     expect(wrapper.get<HTMLInputElement>('.header__title').element.value).toBe('Shared loop')
     expect(wrapper.text()).toContain('Скопировать ссылку')
+    wrapper.unmount()
+  })
+
+  it('registers an account and signs out through the account page', async () => {
+    const fetchAccount = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ email: null }))
+      .mockResolvedValueOnce(Response.json({ email: 'author@example.com' }, { status: 201 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchAccount)
+    const wrapper = await mountAt('/account')
+    await flushPromises()
+
+    await wrapper.get('form button[type="button"]').trigger('click')
+    await wrapper.get('input[type="email"]').setValue('author@example.com')
+    const [password, confirmation] = wrapper.findAll('input[type="password"]')
+    await password!.setValue('test-password')
+    await confirmation!.setValue('test-password')
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(fetchAccount.mock.calls[1]?.[0]).toMatch(/\/api\/registration$/)
+    expect(wrapper.text()).toContain('author@example.com')
+    await wrapper.get('button.page__button').trigger('click')
+    await flushPromises()
+
+    expect(fetchAccount.mock.calls[2]?.[1]).toMatchObject({ method: 'DELETE' })
+    expect(wrapper.get('h1').text()).toBe('Вход')
     wrapper.unmount()
   })
 })

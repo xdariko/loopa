@@ -16,6 +16,11 @@ const router = createRouter({
       component: () => import('@/views/ProjectsView.vue'),
     },
     {
+      path: '/account',
+      name: 'account',
+      component: () => import('@/views/AccountView.vue'),
+    },
+    {
       path: '/s/:token',
       name: 'shared',
       component: () => import('@/views/SharedView.vue'),

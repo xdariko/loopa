@@ -5,7 +5,7 @@ module Api
     end
 
     def copy
-      project = CopyProject.call(shared_project)
+      project = CopyProject.call(shared_project, user: current_user)
       render json: project_details(project), status: :created
     end
 

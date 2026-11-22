@@ -25,16 +25,23 @@ export interface SavedProject extends ProjectSummary, SharedProject {
   readonly share_token: string
 }
 
-async function request(path: string, init?: RequestInit): Promise<Response> {
-  let response: Response
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   try {
-    response = await fetch(`${API_URL}${path}`, init)
+    const headers = new Headers(init?.headers)
+    if (init?.method && init.method !== 'GET') {
+      headers.set('X-Loopa-Request', '1')
+    }
+    return await fetch(`${API_URL}${path}`, { ...init, headers, credentials: 'include' })
   } catch (error) {
     if (init?.signal?.aborted) {
       throw error
     }
     throw new Error('Не удалось связаться с сервером.')
   }
+}
+
+async function request(path: string, init?: RequestInit): Promise<Response> {
+  const response = await apiFetch(path, init)
   if (response.status === 404) {
     throw new Error('Проект или звуковой файл не найден.')
   }

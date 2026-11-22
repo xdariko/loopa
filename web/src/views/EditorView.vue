@@ -45,6 +45,7 @@
           :pattern="editor.selectedPattern"
           :instrument="editor.selectedTrack.instrument"
           :selected-note-ids="editor.selectedNoteIds"
+          :ghost-notes="ghostNotes"
           :playing-note-ids="playingNoteIds"
           :hide-playhead="!isSelectedPatternPlaying"
           @add="editor.addNote"
@@ -63,7 +64,7 @@
         :selected-track-id="editor.selectedTrack?.id ?? null"
         @open="openArrangementPattern"
         @assign="projectStore.setArrangementPattern"
-        @create="editor.createPatternInBar"
+        @create="createArrangementPattern"
       />
     </section>
   </div>
@@ -93,6 +94,31 @@ const playback = usePlaybackStore()
 const importingSample = ref(false)
 const sampleError = ref('')
 const sampleImport = new AbortController()
+const arrangementCell = ref<{ trackId: string; bar: number } | null>(null)
+
+const ghostNotes = computed(() => {
+  const { selectedTrack, selectedPattern } = editor
+  if (!selectedTrack || !selectedPattern) {
+    return []
+  }
+  const { tracks, arrangement } = projectStore.project
+  const lane = arrangement.lanes[selectedTrack.id]
+  const cell = arrangementCell.value
+  const bar =
+    cell?.trackId === selectedTrack.id && lane?.[cell.bar] === selectedPattern.id
+      ? cell.bar
+      : (lane?.indexOf(selectedPattern.id) ?? -1)
+  if (bar < 0) {
+    return []
+  }
+  return tracks.flatMap((track) => {
+    if (track.id === selectedTrack.id) {
+      return []
+    }
+    const id = arrangement.lanes[track.id]?.[bar]
+    return track.patterns.find((pattern) => pattern.id === id)?.notes ?? []
+  })
+})
 
 const cursor = usePlaybackCursor({ active: () => playback.isPlaying, sample: playback.sample })
 const isSelectedPatternPlaying = computed(() => {
@@ -146,13 +172,19 @@ async function importSample(file: File): Promise<void> {
   }
 }
 
-function openArrangementPattern(trackId: string, patternId: string | null): void {
+function openArrangementPattern(trackId: string, patternId: string | null, bar: number): void {
+  arrangementCell.value = { trackId, bar }
   if (editor.selectedTrack?.id !== trackId) {
     editor.selectTrack(trackId)
   }
   if (patternId !== null) {
     editor.selectPattern(patternId)
   }
+}
+
+function createArrangementPattern(trackId: string, bar: number): void {
+  arrangementCell.value = { trackId, bar }
+  editor.createPatternInBar(trackId, bar)
 }
 
 useKeyboardShortcuts([

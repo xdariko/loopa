@@ -3,12 +3,12 @@ module Api
     wrap_parameters false
 
     def index
-      projects = Project.select(:id, :title, :updated_at).order(updated_at: :desc, id: :desc)
+      projects = accessible_projects.select(:id, :title, :updated_at).order(updated_at: :desc, id: :desc)
       render json: projects.map { |project| project_summary(project) }
     end
 
     def create
-      project = Project.new(project_attributes)
+      project = accessible_projects.new(project_attributes)
       if project.save
         render json: project_details(project), status: :created
       else
@@ -17,12 +17,12 @@ module Api
     end
 
     def show
-      project = Project.with_attached_samples.find(params[:id])
+      project = accessible_projects.with_attached_samples.find(params[:id])
       render json: project_details(project)
     end
 
     def update
-      project = Project.with_attached_samples.find(params[:id])
+      project = accessible_projects.with_attached_samples.find(params[:id])
       if project.update(project_attributes)
         render json: project_details(project)
       else
@@ -31,7 +31,7 @@ module Api
     end
 
     def destroy
-      Project.find(params[:id]).destroy!
+      accessible_projects.find(params[:id]).destroy!
       head :no_content
     end
 

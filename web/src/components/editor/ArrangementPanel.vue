@@ -174,7 +174,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  open: [trackId: string, patternId: string | null]
+  open: [trackId: string, patternId: string | null, bar: number]
   assign: [trackId: string, bar: number, patternId: string | null]
   create: [trackId: string, bar: number]
 }>()
@@ -240,7 +240,7 @@ function slotLabel(track: Track, bar: number, number: number | null): string {
 function openCell(trackId: string, bar: number, patternId: string | null): void {
   closePicker()
   activeCell.value = { trackId, bar }
-  emit('open', trackId, patternId)
+  emit('open', trackId, patternId, bar)
 }
 
 function toggleExpanded(): void {

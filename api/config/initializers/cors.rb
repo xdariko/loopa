@@ -3,7 +3,7 @@ if Rails.env.local?
     allow do
       origins "http://127.0.0.1:5173", "http://localhost:5173"
 
-      resource "/api/*", headers: :any, methods: %i[get post patch delete options head]
+      resource "/api/*", headers: :any, methods: %i[get post patch delete options head], credentials: true
       resource "/rails/active_storage/*", headers: :any, methods: %i[get options head]
     end
   end

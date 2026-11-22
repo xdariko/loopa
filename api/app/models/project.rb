@@ -1,4 +1,5 @@
 class Project < ApplicationRecord
+  belongs_to :user, optional: true
   FORMAT_VERSION = 1
   MAX_SAMPLE_SIZE = 5.megabytes
   SAMPLE_TYPES = {

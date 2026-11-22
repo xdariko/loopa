@@ -126,6 +126,30 @@ describe('EditorView tracks', () => {
 })
 
 describe('EditorView patterns', () => {
+  it('shows notes from other tracks only in the selected arrangement bar', async () => {
+    setActivePinia(createPinia())
+    const wrapper = mount(EditorView, {
+      global: { stubs: { RouterLink: true, SpectrumView: true } },
+    })
+    const editor = useEditorStore()
+    const project = useProjectStore()
+    const [lead, bass] = project.project.tracks
+    editor.selectTrack(bass!.id)
+    editor.addNote({ step: 1, pitch: C4 })
+    project.setArrangementPattern(bass!.id, 1, null)
+    editor.selectTrack(lead!.id)
+    await wrapper.vm.$nextTick()
+
+    const ghosts = '.pattern-grid__ghost-note'
+    expect(wrapper.get(ghosts).attributes('aria-hidden')).toBe('true')
+    expect(wrapper.findAll('.pattern-grid__note')).toHaveLength(0)
+    await wrapper.findAll('.arrangement__block')[1]!.trigger('click')
+    expect(wrapper.find(ghosts).exists()).toBe(false)
+    await wrapper.findAll('.arrangement__block')[0]!.trigger('click')
+    expect(wrapper.findAll(ghosts)).toHaveLength(1)
+    wrapper.unmount()
+  })
+
   it('creates, duplicates, opens and undoes patterns through the editor', async () => {
     setActivePinia(createPinia())
     const wrapper = mount(EditorView, {

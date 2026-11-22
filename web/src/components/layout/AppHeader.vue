@@ -13,6 +13,7 @@
 
     <nav class="header__actions">
       <RouterLink to="/projects" class="header__link">Открыть</RouterLink>
+      <RouterLink to="/account" class="header__link">Аккаунт</RouterLink>
       <template v-if="isEditor">
         <button
           type="button"

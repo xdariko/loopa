@@ -70,7 +70,7 @@ export const useProjectPersistenceStore = defineStore('projectPersistence', () =
   const editor = useEditorStore()
   const saved = shallowRef<SavedProject | null>(null)
   const shareToken = ref<string | null>(null)
-  const lastSaved = shallowRef<Project>(projectStore.project)
+  const lastSaved = shallowRef<Project | null>(projectStore.project)
   const isSaving = ref(false)
   const uploadedIds = new Map<string, string>()
 
@@ -91,6 +91,15 @@ export const useProjectPersistenceStore = defineStore('projectPersistence', () =
 
   function startNew(): void {
     replaceProject(createProject(), null)
+  }
+
+  function detachSavedProject(): void {
+    if (saved.value) {
+      lastSaved.value = null
+    }
+    uploadedIds.clear()
+    saved.value = null
+    shareToken.value = null
   }
 
   async function save(): Promise<void> {
@@ -137,5 +146,5 @@ export const useProjectPersistenceStore = defineStore('projectPersistence', () =
     }
   }
 
-  return { isDirty, isSaving, shareToken, save, open, startNew }
+  return { isDirty, isSaving, shareToken, save, open, startNew, detachSavedProject }
 })

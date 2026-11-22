@@ -26,6 +26,14 @@
         />
       </template>
 
+      <span
+        v-for="(note, index) in visibleGhostNotes"
+        :key="index"
+        class="pattern-grid__ghost-note"
+        :style="notePlacement(note)"
+        aria-hidden="true"
+      />
+
       <button
         v-for="note in pattern.notes"
         :key="note.id"
@@ -49,11 +57,7 @@
         />
       </button>
 
-      <PatternPlayhead
-        v-if="!hidePlayhead"
-        :steps="pattern.steps"
-        :style="playheadPlacement"
-      />
+      <PatternPlayhead v-if="!hidePlayhead" :steps="pattern.steps" :style="playheadPlacement" />
 
       <div
         v-if="selectionArea"
@@ -90,6 +94,7 @@ const props = defineProps<{
   pattern: Pattern
   instrument: Instrument
   selectedNoteIds: readonly string[]
+  ghostNotes?: readonly Note[]
   playingNoteIds?: ReadonlySet<string>
   hidePlayhead?: boolean
 }>()
@@ -122,6 +127,14 @@ const rowLineByPitch = computed(() => new Map(rows.value.map((row) => [row.pitch
 const pitchRange = computed(() => pitchRangeFor(props.instrument))
 
 const selectedIds = computed(() => new Set(props.selectedNoteIds))
+const visibleGhostNotes = computed(() =>
+  (props.ghostNotes ?? [])
+    .filter((note) => rowLineByPitch.value.has(note.pitch) && note.step < props.pattern.steps)
+    .map((note) => ({
+      ...note,
+      duration: Math.min(note.duration, props.pattern.steps - note.step),
+    })),
+)
 
 function bounds(): NoteDragBounds {
   return { steps: props.pattern.steps, range: pitchRange.value }
