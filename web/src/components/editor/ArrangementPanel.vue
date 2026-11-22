@@ -17,8 +17,9 @@
         {{ expanded ? 'Свернуть' : 'Развернуть' }}
       </button>
     </div>
+    <p v-if="!rows.length" class="arrangement__empty">Добавьте дорожку, чтобы собрать композицию</p>
     <div
-      v-if="rows.length"
+      ref="viewport"
       class="arrangement__viewport"
       role="region"
       aria-label="Таймлайн композиции"
@@ -34,8 +35,15 @@
             }}</span>
           </div>
         </div>
-        <div v-for="row in rows" :key="row.track.id" class="arrangement__row">
-          <span class="arrangement__track" :title="row.track.name">{{ row.track.name }}</span>
+        <div
+          v-for="row in rows"
+          :key="row.track.id"
+          class="arrangement__row"
+          :style="{ '--track-color': row.color }"
+        >
+          <span class="arrangement__track" :title="row.track.name">
+            <span class="arrangement__track-dot" aria-hidden="true" />{{ row.track.name }}
+          </span>
           <div class="arrangement__bars">
             <div
               v-for="({ pattern, number }, bar) in row.slots"
@@ -90,6 +98,16 @@
             </div>
           </div>
         </div>
+        <button
+          type="button"
+          class="arrangement__append"
+          aria-label="Добавить такт"
+          title="Добавить такт"
+          @keydown.space.stop
+          @click="appendBar"
+        >
+          +
+        </button>
         <div
           v-if="playbackBar !== null"
           class="arrangement__playback"
@@ -99,25 +117,26 @@
         </div>
       </div>
     </div>
-    <p v-else class="arrangement__empty">Добавьте дорожку, чтобы собрать композицию</p>
 
     <Teleport to="body">
       <div
-        v-if="picker && pickerTrack"
+        v-if="picker && pickerRow"
         ref="pickerElement"
         class="arrangement__picker"
         role="dialog"
         :aria-label="pickerLabel"
-        :style="picker.style"
+        :style="[picker.style, { '--track-color': pickerRow.color }]"
         tabindex="-1"
         @focusout="dismissOnFocusOut"
         @keydown.stop
         @keydown.esc.prevent="closePicker(true)"
       >
-        <p class="arrangement__picker-title">{{ pickerLabel }}</p>
-        <div v-if="pickerTrack.patterns.length" class="arrangement__choices">
+        <p class="arrangement__picker-title">
+          <span class="arrangement__track-dot" aria-hidden="true" />{{ pickerLabel }}
+        </p>
+        <div v-if="pickerRow.track.patterns.length" class="arrangement__choices">
           <button
-            v-for="(pattern, index) in pickerTrack.patterns"
+            v-for="(pattern, index) in pickerRow.track.patterns"
             :key="pattern.id"
             type="button"
             class="arrangement__choice"
@@ -125,7 +144,7 @@
             @click="assignPattern(pattern.id)"
           >
             <span class="arrangement__thumbnail">
-              <PatternPreview :pattern="pattern" :range="pitchRangeFor(pickerTrack.instrument)" />
+              <PatternPreview :pattern="pattern" :range="pickerRow.range" />
             </span>
             Паттерн {{ index + 1 }}
           </button>
@@ -165,6 +184,7 @@ import PatternPreview from '@/components/editor/PatternPreview.vue'
 import { injectPlaybackCursor } from '@/composables/usePlaybackCursor'
 import { STEPS_PER_BAR } from '@/domain/constants'
 import { pitchRangeFor } from '@/domain/instruments'
+import { trackColor } from '@/domain/trackColor'
 import type { Arrangement, Track } from '@/domain/types'
 
 const props = defineProps<{
@@ -174,6 +194,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  appendBar: []
   open: [trackId: string, patternId: string | null, bar: number]
   assign: [trackId: string, bar: number, patternId: string | null]
   create: [trackId: string, bar: number]
@@ -197,16 +218,16 @@ const { bar: playbackBar, patterns: playingPatterns } = injectPlaybackCursor()
 const activeCell = shallowRef<Cell | null>(null)
 const picker = shallowRef<Picker | null>(null)
 const pickerElement = useTemplateRef<HTMLElement>('pickerElement')
-const pickerTrack = computed(() => props.tracks.find((track) => track.id === picker.value?.trackId))
+const viewport = useTemplateRef<HTMLElement>('viewport')
 const pickerLabel = computed(
-  () => `${pickerTrack.value?.name} · Такт ${(picker.value?.bar ?? 0) + 1}`,
+  () => `${pickerRow.value?.track.name} · Такт ${(picker.value?.bar ?? 0) + 1}`,
 )
 const pickerPatternId = computed(() =>
   picker.value ? (props.arrangement.lanes[picker.value.trackId]?.[picker.value.bar] ?? null) : null,
 )
 
 const rows = computed(() =>
-  props.tracks.map((track) => {
+  props.tracks.map((track, index) => {
     const patterns = new Map(
       track.patterns.map((pattern, index) => [pattern.id, { pattern, number: index + 1 }]),
     )
@@ -216,9 +237,10 @@ const rows = computed(() =>
       const entry = id == null ? undefined : patterns.get(id)
       return entry ?? { pattern: null, number: null }
     })
-    return { track, range: pitchRangeFor(track.instrument), slots }
+    return { track, range: pitchRangeFor(track.instrument), slots, color: trackColor(index) }
   }),
 )
+const pickerRow = computed(() => rows.value.find((row) => row.track.id === picker.value?.trackId))
 
 const selectedCell = computed(() => {
   const cell = activeCell.value
@@ -246,6 +268,15 @@ function openCell(trackId: string, bar: number, patternId: string | null): void 
 function toggleExpanded(): void {
   expanded.value = !expanded.value
   closePicker()
+}
+
+async function appendBar(): Promise<void> {
+  closePicker()
+  emit('appendBar')
+  await nextTick()
+  if (viewport.value) {
+    viewport.value.scrollLeft = viewport.value.scrollWidth
+  }
 }
 
 function isPickerFor(trackId: string, bar: number): boolean {

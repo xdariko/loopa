@@ -15,20 +15,18 @@
     />
 
     <nav class="header__actions">
-      <RouterLink to="/projects" class="header__link">Открыть</RouterLink>
-      <RouterLink v-if="route.name !== 'home'" to="/account" class="header__link"
-        >Аккаунт</RouterLink
+      <button
+        v-if="isEditor && account.email"
+        type="button"
+        class="header__link"
+        :disabled="persistence.isSaving"
+        @keydown.space.stop
+        @click="newProject"
       >
+        Новый
+      </button>
+      <RouterLink v-if="account.email" to="/projects" class="header__link">Открыть</RouterLink>
       <template v-if="isEditor">
-        <button
-          type="button"
-          class="header__link"
-          :disabled="persistence.isSaving"
-          @keydown.space.stop
-          @click="newProject"
-        >
-          Новый
-        </button>
         <button
           v-if="persistence.shareToken"
           type="button"
@@ -49,10 +47,11 @@
           {{ persistence.isSaving ? 'Сохраняем…' : 'Сохранить' }}
         </button>
       </template>
+      <RouterLink v-if="account.email" to="/account" class="header__link">Аккаунт</RouterLink>
     </nav>
     <div v-if="isEditor && (status || shareLink)" class="header__feedback">
       <p v-if="status" role="status">{{ status }}</p>
-      <RouterLink v-if="accountRequired" to="/account" class="page__button">
+      <RouterLink v-if="accountRequired" to="/account" class="header__button">
         Войти или зарегистрироваться
       </RouterLink>
       <input
@@ -70,8 +69,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { getAccount } from '@/api/account'
 import { AccountRequiredError } from '@/api/projects'
 
+import { useAccountStore } from '@/stores/account'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectStore } from '@/stores/project'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
@@ -79,6 +80,7 @@ import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 const route = useRoute()
 const logoUrl = `${import.meta.env.BASE_URL}loopa.svg`
 const router = useRouter()
+const account = useAccountStore()
 const project = useProjectStore()
 const playback = usePlaybackStore()
 const persistence = useProjectPersistenceStore()
@@ -90,6 +92,28 @@ const projectTitle = computed({
 const status = ref('')
 const accountRequired = ref(false)
 const shareLink = ref('')
+
+watch(
+  () => route.name,
+  async (name, _, onCleanup) => {
+    if (name === 'account') {
+      return
+    }
+    const controller = new AbortController()
+    onCleanup(() => controller.abort())
+    try {
+      const session = await getAccount(controller.signal)
+      if (!controller.signal.aborted) {
+        account.email = session.email
+      }
+    } catch {
+      if (!controller.signal.aborted) {
+        account.email = null
+      }
+    }
+  },
+  { immediate: true },
+)
 
 watch(isEditor, () => {
   status.value = ''
@@ -108,6 +132,9 @@ async function save(): Promise<void> {
       : 'Проект сохранён.'
   } catch (error) {
     accountRequired.value = error instanceof AccountRequiredError
+    if (accountRequired.value) {
+      account.email = null
+    }
     status.value = error instanceof Error ? error.message : 'Не удалось сохранить проект.'
   }
 }

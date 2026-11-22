@@ -44,6 +44,7 @@
           class="editor__pattern"
           :pattern="editor.selectedPattern"
           :instrument="editor.selectedTrack.instrument"
+          :track-color="selectedTrackColor"
           :selected-note-ids="editor.selectedNoteIds"
           :ghost-notes="ghostNotes"
           :playing-note-ids="playingNoteIds"
@@ -62,6 +63,7 @@
         :tracks="projectStore.project.tracks"
         :arrangement="projectStore.project.arrangement"
         :selected-track-id="editor.selectedTrack?.id ?? null"
+        @append-bar="projectStore.appendArrangementBar"
         @open="openArrangementPattern"
         @assign="projectStore.setArrangementPattern"
         @create="createArrangementPattern"
@@ -84,6 +86,7 @@ import ArrangementPanel from '@/components/editor/ArrangementPanel.vue'
 import SpectrumView from '@/components/editor/SpectrumView.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { providePlaybackCursor, usePlaybackCursor } from '@/composables/usePlaybackCursor'
+import { trackColor } from '@/domain/trackColor'
 import { useEditorStore } from '@/stores/editor'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectStore } from '@/stores/project'
@@ -95,6 +98,12 @@ const importingSample = ref(false)
 const sampleError = ref('')
 const sampleImport = new AbortController()
 const arrangementCell = ref<{ trackId: string; bar: number } | null>(null)
+const selectedTrackColor = computed(() => {
+  const index = projectStore.project.tracks.findIndex(
+    (track) => track.id === editor.selectedTrack?.id,
+  )
+  return index >= 0 ? trackColor(index) : undefined
+})
 
 const ghostNotes = computed(() => {
   const { selectedTrack, selectedPattern } = editor
@@ -111,12 +120,14 @@ const ghostNotes = computed(() => {
   if (bar < 0) {
     return []
   }
-  return tracks.flatMap((track) => {
+  return tracks.flatMap((track, index) => {
     if (track.id === selectedTrack.id) {
       return []
     }
     const id = arrangement.lanes[track.id]?.[bar]
-    return track.patterns.find((pattern) => pattern.id === id)?.notes ?? []
+    const notes = track.patterns.find((pattern) => pattern.id === id)?.notes ?? []
+    const color = trackColor(index)
+    return notes.map((note) => ({ ...note, color }))
   })
 })
 

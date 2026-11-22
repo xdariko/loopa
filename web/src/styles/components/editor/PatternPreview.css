@@ -5,7 +5,7 @@
 }
 
 .pattern-preview__note {
-  fill: var(--color-accent);
+  fill: var(--track-color, var(--color-accent));
 }
 
 .pattern-preview__note--playing {

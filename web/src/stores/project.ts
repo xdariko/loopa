@@ -60,6 +60,10 @@ export const useProjectStore = defineStore('project', () => {
     return change((current) => projects.renameProject(current, title))
   }
 
+  function appendArrangementBar(): void {
+    change(projects.appendArrangementBar)
+  }
+
   function setArrangementPattern(trackId: string, bar: number, patternId: string | null): boolean {
     return change((current) => projects.setArrangementPattern(current, trackId, bar, patternId))
   }
@@ -76,6 +80,7 @@ export const useProjectStore = defineStore('project', () => {
     setTrackMuted,
     setTrackMixLevel,
     rename,
+    appendArrangementBar,
     setArrangementPattern,
   }
 })

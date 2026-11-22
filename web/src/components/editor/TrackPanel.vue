@@ -5,7 +5,12 @@
     <slot />
 
     <ul class="tracks__list">
-      <li v-for="track in tracks" :key="track.id" class="tracks__row">
+      <li
+        v-for="(track, index) in tracks"
+        :key="track.id"
+        class="tracks__row"
+        :style="{ '--track-color': trackColor(index) }"
+      >
         <input
           v-if="renamingTrackId === track.id"
           :ref="focusNameInput"
@@ -90,6 +95,7 @@ import { ref, useTemplateRef, type ComponentPublicInstance } from 'vue'
 import { SAMPLE_FILE_ACCEPT } from '@/audio/sampleFile'
 import { MAX_TRACK_NAME_LENGTH } from '@/domain/constants'
 import { TRACK_INSTRUMENTS, instrumentLabel, type Instrument } from '@/domain/instruments'
+import { trackColor } from '@/domain/trackColor'
 import type { Track } from '@/domain/types'
 
 defineProps<{

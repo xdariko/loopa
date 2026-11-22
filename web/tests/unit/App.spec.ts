@@ -17,6 +17,10 @@ async function mountAt(path: string) {
 describe('App', () => {
   afterEach(() => vi.unstubAllGlobals())
   it('links from the home page to the account and editor', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ email: null })),
+    )
     const wrapper = await mountAt('/')
 
     expect(wrapper.get('h1').text()).toBe('Собери свой луп')
@@ -41,7 +45,11 @@ describe('App', () => {
       .fn()
       .mockResolvedValueOnce(Response.json(shared))
       .mockResolvedValueOnce(Response.json(copy, { status: 201 }))
-    vi.stubGlobal('fetch', fetchProject)
+    vi.stubGlobal('fetch', (url: string, init: RequestInit) =>
+      url.endsWith('/api/session')
+        ? Promise.resolve(Response.json({ email: 'author@example.com' }))
+        : fetchProject(url, init),
+    )
     const wrapper = await mountAt('/s/abc123')
     await flushPromises()
 
@@ -57,6 +65,12 @@ describe('App', () => {
     ])
     expect(fetchProject.mock.calls[1]?.[1].headers.get('X-Loopa-Request')).toBe('1')
     expect(wrapper.get<HTMLInputElement>('.header__title').element.value).toBe('Shared loop')
+    expect(
+      wrapper
+        .findAll('.header__actions .header__link')
+        .slice(0, 2)
+        .map((link) => link.text()),
+    ).toEqual(['Новый', 'Открыть'])
     expect(wrapper.text()).toContain('Скопировать ссылку')
     wrapper.unmount()
   })
@@ -69,6 +83,11 @@ describe('App', () => {
     const wrapper = await mountAt('/editor')
 
     expect(wrapper.find('[data-testid="grid-area"]').exists()).toBe(true)
+    expect(wrapper.find('header a[href="/projects"]').exists()).toBe(false)
+    expect(wrapper.find('header a[href="/account"]').exists()).toBe(false)
+    expect(wrapper.findAll('.header__actions button').map((button) => button.text())).not.toContain(
+      'Новый',
+    )
     await wrapper.get('.header__button').trigger('click')
     await flushPromises()
     expect(wrapper.get('.header__feedback a').attributes('href')).toBe('/account')
@@ -100,11 +119,15 @@ describe('App', () => {
 
     expect(fetchAccount.mock.calls[1]?.[0]).toMatch(/\/api\/registration$/)
     expect(wrapper.text()).toContain('author@example.com')
+    expect(wrapper.get('header a[href="/projects"]').text()).toBe('Открыть')
+    expect(wrapper.get('header a[href="/account"]').text()).toBe('Аккаунт')
     await wrapper.get('button.page__button').trigger('click')
     await flushPromises()
 
     expect(fetchAccount.mock.calls[2]?.[1]).toMatchObject({ method: 'DELETE' })
     expect(wrapper.get('h1').text()).toBe('Вход')
+    expect(wrapper.find('header a[href="/projects"]').exists()).toBe(false)
+    expect(wrapper.find('header a[href="/account"]').exists()).toBe(false)
     wrapper.unmount()
   })
 })

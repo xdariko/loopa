@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 import { getAudioEngine } from '@/audio/engine'
 import { SampleFileError } from '@/audio/sampleFile'
+import { parseProject, serializeProject } from '@/domain/serialization'
 import EditorView from '@/views/EditorView.vue'
 import { useEditorStore } from '@/stores/editor'
 import { useProjectStore } from '@/stores/project'
@@ -126,7 +127,43 @@ describe('EditorView tracks', () => {
 })
 
 describe('EditorView patterns', () => {
-  it('shows notes from other tracks only in the selected arrangement bar', async () => {
+  it('adds an empty bar to every track and supports saving and undo', async () => {
+    setActivePinia(createPinia())
+    const wrapper = mount(EditorView, {
+      global: { stubs: { RouterLink: true, SpectrumView: true } },
+    })
+    const store = useProjectStore()
+    const original = store.project
+    const append = wrapper.get('.arrangement__map > .arrangement__append')
+    expect(append.attributes('aria-label')).toBe('Добавить такт')
+    await append.trigger('click')
+
+    const { arrangement } = store.project
+    expect(wrapper.findAll('.arrangement__tick')).toHaveLength(original.arrangement.barCount + 1)
+    for (const track of original.tracks) {
+      expect(arrangement.lanes[track.id]).toEqual([...original.arrangement.lanes[track.id]!, null])
+    }
+    expect(parseProject(serializeProject(store.project)).arrangement).toEqual(arrangement)
+
+    const trackRows = wrapper.findAll<HTMLElement>('.tracks__row')
+    const arrangementRows = wrapper.findAll<HTMLElement>(
+      '.arrangement__row:not(.arrangement__ruler)',
+    )
+    const colors = trackRows.map((row) => row.element.style.getPropertyValue('--track-color'))
+    expect(new Set(colors).size).toBe(original.tracks.length)
+    expect(
+      arrangementRows.map((row) => row.element.style.getPropertyValue('--track-color')),
+    ).toEqual(colors)
+    await arrangementRows[1]!.get('.arrangement__block--empty').trigger('click')
+    const picker = document.querySelector<HTMLElement>('.arrangement__picker')
+    expect(picker?.style.getPropertyValue('--track-color')).toBe(colors[1])
+
+    press('KeyZ', { ctrlKey: true })
+    expect(store.project).toBe(original)
+    wrapper.unmount()
+  })
+
+  it('shows notes in their track colors and ghosts only in the selected arrangement bar', async () => {
     setActivePinia(createPinia())
     const wrapper = mount(EditorView, {
       global: { stubs: { RouterLink: true, SpectrumView: true } },
@@ -142,6 +179,16 @@ describe('EditorView patterns', () => {
 
     const ghosts = '.pattern-grid__ghost-note'
     expect(wrapper.get(ghosts).attributes('aria-hidden')).toBe('true')
+    const [leadRow, bassRow] = wrapper.findAll<HTMLElement>('.tracks__row')
+    const leadColor = leadRow!.element.style.getPropertyValue('--track-color')
+    const bassColor = bassRow!.element.style.getPropertyValue('--track-color')
+    expect(wrapper.get<HTMLElement>(ghosts).element.style.getPropertyValue('--ghost-color')).toBe(
+      bassColor,
+    )
+    expect(
+      wrapper.get<HTMLElement>('.pattern-grid').element.style.getPropertyValue('--track-color'),
+    ).toBe(leadColor)
+    expect(leadColor).not.toBe(bassColor)
     expect(wrapper.findAll('.pattern-grid__note')).toHaveLength(0)
     await wrapper.findAll('.arrangement__block')[1]!.trigger('click')
     expect(wrapper.find(ghosts).exists()).toBe(false)

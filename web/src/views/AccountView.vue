@@ -57,15 +57,17 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { storeToRefs } from 'pinia'
 import { onBeforeRouteLeave } from 'vue-router'
 
 import { authenticate, getAccount, signOut } from '@/api/account'
+import { useAccountStore } from '@/stores/account'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
 const persistence = useProjectPersistenceStore()
 const playback = usePlaybackStore()
-const email = ref<string | null>(null)
+const { email } = storeToRefs(useAccountStore())
 const address = ref('')
 const password = ref('')
 const confirmation = ref('')
@@ -89,6 +91,7 @@ async function load(): Promise<void> {
     email.value = (await getAccount(abort.signal)).email
   } catch (cause) {
     if (!abort.signal.aborted) {
+      email.value = null
       loadFailed.value = true
       report(cause)
     }

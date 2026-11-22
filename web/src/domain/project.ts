@@ -71,6 +71,19 @@ export function addPattern(project: Project, trackId: string, pattern: Pattern):
   }))
 }
 
+export function appendArrangementBar(project: Project): Project {
+  const { barCount, lanes } = project.arrangement
+  return {
+    ...project,
+    arrangement: {
+      barCount: barCount + 1,
+      lanes: Object.fromEntries(
+        Object.entries(lanes).map(([trackId, lane]) => [trackId, [...lane, null]]),
+      ),
+    },
+  }
+}
+
 export function setArrangementPattern(
   project: Project,
   trackId: string,

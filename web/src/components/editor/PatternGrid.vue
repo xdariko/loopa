@@ -1,5 +1,5 @@
 <template>
-  <div ref="viewport" class="pattern-grid">
+  <div ref="viewport" class="pattern-grid" :style="{ '--track-color': trackColor }">
     <div class="pattern-grid__body" :style="{ '--pattern-steps': pattern.steps }">
       <template v-for="row in rows" :key="row.pitch">
         <span
@@ -30,7 +30,7 @@
         v-for="(note, index) in visibleGhostNotes"
         :key="index"
         class="pattern-grid__ghost-note"
-        :style="notePlacement(note)"
+        :style="{ ...notePlacement(note), '--ghost-color': note.color }"
         aria-hidden="true"
       />
 
@@ -93,8 +93,9 @@ type NoteGesture = 'move' | 'resize'
 const props = defineProps<{
   pattern: Pattern
   instrument: Instrument
+  trackColor?: string
   selectedNoteIds: readonly string[]
-  ghostNotes?: readonly Note[]
+  ghostNotes?: readonly (Note & { readonly color: string })[]
   playingNoteIds?: ReadonlySet<string>
   hidePlayhead?: boolean
 }>()
