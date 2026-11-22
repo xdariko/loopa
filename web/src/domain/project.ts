@@ -58,6 +58,31 @@ export function addPattern(project: Project, trackId: string, pattern: Pattern):
   }))
 }
 
+export function setArrangementPattern(
+  project: Project,
+  trackId: string,
+  bar: number,
+  patternId: string | null,
+): Project {
+  const track = findTrack(project, trackId)
+  const lane = project.arrangement.lanes[trackId]
+  if (!track || !lane || lane[bar] === undefined || lane[bar] === patternId) {
+    return project
+  }
+  if (patternId !== null && !track.patterns.some((pattern) => pattern.id === patternId)) {
+    return project
+  }
+  const nextLane = lane.slice()
+  nextLane[bar] = patternId
+  return {
+    ...project,
+    arrangement: {
+      ...project.arrangement,
+      lanes: { ...project.arrangement.lanes, [trackId]: nextLane },
+    },
+  }
+}
+
 export function addTrack(project: Project, track: Track, lane: ArrangementLane): Project {
   return {
     ...project,

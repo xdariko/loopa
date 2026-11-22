@@ -15,6 +15,7 @@ import {
   removeTrack,
   renameProject,
   renameTrack,
+  setArrangementPattern,
   setBpm,
   setSwing,
   updatePattern,
@@ -54,6 +55,33 @@ describe('addPattern', () => {
     expect(updated.tracks[1]).toBe(project.tracks[1])
     expect(updated.arrangement).toBe(project.arrangement)
     expect(addPattern(project, 'missing', pattern)).toBe(project)
+  })
+})
+
+describe('setArrangementPattern', () => {
+  it('updates and clears a single slot without changing other lanes', () => {
+    const project = createProject()
+    const track = firstTrack(project)
+    const secondPattern = createPattern()
+    const withPattern = addPattern(project, track.id, secondPattern)
+    const updated = setArrangementPattern(withPattern, track.id, 1, secondPattern.id)
+
+    expect(updated.arrangement.lanes[track.id]?.[1]).toBe(secondPattern.id)
+    expect(updated.arrangement.lanes[track.id]?.[0]).toBe(track.patterns[0]?.id)
+    expect(updated.tracks).toBe(withPattern.tracks)
+    const cleared = setArrangementPattern(updated, track.id, 1, null)
+    expect(cleared.arrangement.lanes[track.id]?.[1]).toBeNull()
+    expect(setArrangementPattern(cleared, track.id, 1, null)).toBe(cleared)
+  })
+
+  it('rejects an invalid bar and references to another track’s pattern', () => {
+    const project = createProject()
+    const track = firstTrack(project)
+    const otherPatternId = project.tracks[1]!.patterns[0]!.id
+
+    expect(setArrangementPattern(project, track.id, 0, otherPatternId)).toBe(project)
+    expect(setArrangementPattern(project, track.id, -1, null)).toBe(project)
+    expect(setArrangementPattern(project, track.id, DEFAULT_BAR_COUNT, null)).toBe(project)
   })
 })
 

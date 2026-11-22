@@ -1,11 +1,14 @@
 .editor {
   display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-columns: min(var(--sidebar-width), 32vw) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
 }
 
 .editor__tracks {
   border-right: 1px solid var(--color-border);
+  min-height: 0;
+  overflow: auto;
 }
 
 .editor__workspace {
@@ -39,6 +42,10 @@
 }
 
 .editor__arrangement {
-  height: var(--arrangement-height);
+  flex-basis: min(var(--arrangement-height), 45%);
   flex-shrink: 0;
+}
+
+.editor__arrangement.arrangement--expanded {
+  flex-basis: 68%;
 }

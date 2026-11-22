@@ -96,3 +96,62 @@ describe('EditorView patterns', () => {
     wrapper.unmount()
   })
 })
+
+describe('EditorView arrangement', () => {
+  it('opens a track from the map, renders its notes, and assigns or clears a slot', async () => {
+    setActivePinia(createPinia())
+    const wrapper = mount(EditorView, {
+      global: { stubs: { RouterLink: true, SpectrumView: true, Teleport: true } },
+    })
+    const editor = useEditorStore()
+    const drumRow = wrapper.findAll('.arrangement__row')[3]!
+    const secondBar = drumRow.findAll('.arrangement__block')[1]!
+    const secondCell = drumRow.findAll('.arrangement__cell')[1]!
+
+    await secondBar.trigger('click')
+    expect(editor.selectedTrack?.instrument.kind).toBe('drums')
+    expect(secondBar.attributes('aria-pressed')).toBe('true')
+    editor.addNote({ step: 2, pitch: 1 }, 3)
+    await wrapper.vm.$nextTick()
+
+    const note = secondBar.get('svg rect')
+    expect(note.attributes()).toMatchObject({ x: '2', y: '1', width: '3', height: '1' })
+    expect(drumRow.findAll('rect')).toHaveLength(4)
+
+    editor.duplicateSelectedPattern()
+    await wrapper.vm.$nextTick()
+    const copyId = editor.selectedPattern?.id
+    await secondCell.get('.arrangement__cell-action').trigger('click')
+    expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toContain('Такт 2')
+    await wrapper.findAll('.arrangement__choice')[1]!.trigger('click')
+    expect(secondBar.attributes('title')).toContain('Паттерн 2')
+    expect(editor.selectedPattern?.id).toBe(copyId)
+
+    await secondCell.get('.arrangement__cell-action').trigger('click')
+    await wrapper.findAll('.arrangement__picker-action')[1]!.trigger('click')
+    expect(secondCell.find('.arrangement__block--empty').exists()).toBe(true)
+    expect(secondCell.find('svg').exists()).toBe(false)
+
+    await secondCell.get('.arrangement__block--empty').trigger('click')
+    await wrapper.get('.arrangement__picker-action').trigger('click')
+    expect(secondCell.get('.arrangement__block').attributes('title')).toContain('Паттерн 3')
+    expect(editor.selectedTrack?.patterns).toHaveLength(3)
+
+    press('KeyZ', { ctrlKey: true })
+    await wrapper.vm.$nextTick()
+    expect(editor.selectedTrack?.patterns).toHaveLength(2)
+    expect(secondCell.find('.arrangement__block--empty').exists()).toBe(true)
+    press('KeyZ', { ctrlKey: true })
+    await wrapper.vm.$nextTick()
+    expect(secondCell.get('.arrangement__block').attributes('title')).toContain('Паттерн 2')
+    await secondCell.get('.arrangement__block').trigger('click')
+    expect(editor.selectedPattern?.id).toBe(copyId)
+
+    await wrapper.get('.arrangement__toggle').trigger('click')
+    expect(wrapper.get('.arrangement').classes()).toContain('arrangement--expanded')
+    await wrapper.get('.arrangement__toggle').trigger('click')
+    expect(wrapper.get('.arrangement').classes()).not.toContain('arrangement--expanded')
+
+    wrapper.unmount()
+  })
+})

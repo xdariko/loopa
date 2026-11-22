@@ -1,0 +1,13 @@
+.pattern-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pattern-preview__note {
+  fill: var(--color-accent);
+}
+
+.pattern-preview__note--playing {
+  fill: var(--color-note-playing);
+}

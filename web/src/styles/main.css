@@ -9,6 +9,7 @@
 @import './components/editor/PatternPlayhead.css';
 @import './components/editor/SpectrumView.css';
 @import './components/editor/ArrangementPanel.css';
+@import './components/editor/PatternPreview.css';
 
 @import './views/EditorView.css';
 @import './views/page.css';

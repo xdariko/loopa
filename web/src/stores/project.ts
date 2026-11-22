@@ -48,5 +48,20 @@ export const useProjectStore = defineStore('project', () => {
     return change((current) => projects.renameProject(current, title))
   }
 
-  return { project, past, canUndo, change, undo, load, setBpm, setSwing, rename }
+  function setArrangementPattern(trackId: string, bar: number, patternId: string | null): boolean {
+    return change((current) => projects.setArrangementPattern(current, trackId, bar, patternId))
+  }
+
+  return {
+    project,
+    past,
+    canUndo,
+    change,
+    undo,
+    load,
+    setBpm,
+    setSwing,
+    rename,
+    setArrangementPattern,
+  }
 })

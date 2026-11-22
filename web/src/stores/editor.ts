@@ -87,6 +87,20 @@ export const useEditorStore = defineStore('editor', () => {
     return addPattern(createPattern())
   }
 
+  function createPatternInBar(trackId: string, bar: number): boolean {
+    const pattern = createPattern()
+    const created = projectStore.change((project) => {
+      const withPattern = projects.addPattern(project, trackId, pattern)
+      const withAssignment = projects.setArrangementPattern(withPattern, trackId, bar, pattern.id)
+      return withAssignment === withPattern ? project : withAssignment
+    })
+    if (created) {
+      selectTrack(trackId)
+      selectPattern(pattern.id)
+    }
+    return created
+  }
+
   function duplicateSelectedPattern(): boolean {
     const pattern = selectedPattern.value
     return pattern ? addPattern(duplicatePattern(pattern)) : false
@@ -182,6 +196,7 @@ export const useEditorStore = defineStore('editor', () => {
     selectTrack,
     selectPattern,
     createSelectedTrackPattern,
+    createPatternInBar,
     duplicateSelectedPattern,
     selectNote,
     toggleNoteSelection,

@@ -42,7 +42,16 @@
         />
         <p v-else class="editor__placeholder">Добавьте дорожку, чтобы расставлять ноты</p>
       </div>
-      <ArrangementPanel class="editor__arrangement" />
+      <ArrangementPanel
+        class="editor__arrangement"
+        :tracks="projectStore.project.tracks"
+        :arrangement="projectStore.project.arrangement"
+        :selected-track-id="editor.selectedTrack?.id ?? null"
+        :selected-pattern="editor.selectedPattern"
+        @open="openArrangementPattern"
+        @assign="projectStore.setArrangementPattern"
+        @create="editor.createPatternInBar"
+      />
     </section>
   </div>
 </template>
@@ -70,6 +79,15 @@ const { playingNoteIds } = cursor
 providePlaybackCursor(cursor)
 
 onBeforeUnmount(playback.pause)
+
+function openArrangementPattern(trackId: string, patternId: string | null): void {
+  if (editor.selectedTrack?.id !== trackId) {
+    editor.selectTrack(trackId)
+  }
+  if (patternId !== null) {
+    editor.selectPattern(patternId)
+  }
+}
 
 useKeyboardShortcuts([
   { codes: ['Delete', 'Backspace'], handler: editor.deleteSelectedNotes },
