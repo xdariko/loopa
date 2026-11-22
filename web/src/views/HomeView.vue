@@ -2,13 +2,10 @@
   <div class="home">
     <section class="home__hero" aria-labelledby="home-title">
       <div class="home__intro">
-        <h1 id="home-title">
-          {{ $t('home.heading') }}
-          <span class="home__heading-accent">
-            {{ $t('home.headingAccent') }}
-            <span class="home__mark" aria-hidden="true"></span>
-          </span>
+        <h1 id="home-title" class="home__title" aria-label="loopa">
+          <span aria-hidden="true">lo<span class="home__mark">o</span>pa</span>
         </h1>
+        <h2 class="home__tagline">{{ $t('home.tagline') }}</h2>
         <p>
           {{ $t('home.description') }}
           <span>{{ $t('home.instructions') }}</span>

@@ -18,24 +18,35 @@
   container-type: inline-size;
 }
 
-.home__heading-accent {
-  display: flex;
-  align-items: center;
-  gap: clamp(12px, 4cqi, 24px);
-  white-space: nowrap;
+.home__title {
+  font-size: min(24cqi, 7rem);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
 }
 
 .home__mark {
-  flex: 0 0 0.9em;
-  aspect-ratio: 1;
+  position: relative;
+  display: inline-block;
+  block-size: 0.58em;
+  margin-inline-start: 0.055em;
+  overflow: hidden;
+  color: transparent;
+  line-height: 0.58em;
+  vertical-align: -0.035em;
+}
+
+.home__mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: var(--color-accent);
   mask: url('/snake-spiral.svg') center / contain no-repeat;
 }
 
-.home__intro h1 {
-  font-size: min(15cqi, 5.5rem);
-  line-height: 0.95;
-  letter-spacing: -0.055em;
+.home__tagline {
+  margin-top: 18px;
+  font-size: clamp(1.5rem, 7cqi, 2.5rem);
+  line-height: 1.15;
 }
 
 .home__intro p {
