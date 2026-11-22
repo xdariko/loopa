@@ -1,6 +1,6 @@
 <template>
   <details class="track-settings">
-    <summary class="track-settings__summary" @keydown.space.stop>Настройки звука</summary>
+    <summary class="track-settings__summary" @keydown.space.stop>{{ $t('settings.title') }}</summary>
     <fieldset v-if="track" :key="track.id" class="track-settings__group">
       <legend class="track-settings__name" :title="track.name">{{ track.name }}</legend>
       <label class="track-settings__mute">
@@ -10,7 +10,7 @@
           :checked="track.muted"
           @change="changeMuted"
         />
-        Без звука
+        {{ $t('settings.muted') }}
       </label>
 
       <label v-for="control in mixControls" :key="control.id" class="track-settings__slider">
@@ -29,9 +29,9 @@
     </fieldset>
 
     <fieldset class="track-settings__group">
-      <legend class="track-settings__name">Проект</legend>
+      <legend class="track-settings__name">{{ $t('settings.project') }}</legend>
       <label class="track-settings__slider">
-        <span class="track-settings__label">Свинг</span>
+        <span class="track-settings__label">{{ $t('settings.swing') }}</span>
         <span class="track-settings__value" aria-hidden="true">{{ swingPercent }}%</span>
         <input
           class="track-settings__range"
@@ -55,11 +55,7 @@ import type { Track } from '@/domain/types'
 
 const PERCENT_SCALE = 100
 
-const controlLabels: Record<TrackMixControl, string> = {
-  volume: 'Громкость',
-  delay: 'Delay',
-  reverb: 'Reverb',
-}
+const mixControlIds: readonly TrackMixControl[] = ['volume', 'delay', 'reverb']
 
 export default defineComponent({
   props: {
@@ -85,9 +81,9 @@ export default defineComponent({
         return []
       }
       const levels = { volume: track.volume, ...track.effects }
-      return (Object.keys(controlLabels) as TrackMixControl[]).map((id) => ({
+      return mixControlIds.map((id) => ({
         id,
-        label: controlLabels[id],
+        label: this.$t(`settings.${id}`),
         percent: this.toPercent(levels[id]),
       }))
     },

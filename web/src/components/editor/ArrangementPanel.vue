@@ -1,7 +1,7 @@
 <template>
-  <section class="arrangement" :class="{ 'arrangement--expanded': expanded }" aria-label="Композиция">
+  <section class="arrangement" :class="{ 'arrangement--expanded': expanded }" :aria-label="$t('arrangement.title')">
     <div class="arrangement__header">
-      <h2 class="arrangement__heading">Композиция</h2>
+      <h2 class="arrangement__heading">{{ $t('arrangement.title') }}</h2>
       <button
         v-if="rows.length"
         type="button"
@@ -10,15 +10,15 @@
         @keydown.space.stop
         @click="toggleExpanded"
       >
-        {{ expanded ? 'Свернуть' : 'Развернуть' }}
+        {{ expanded ? $t('arrangement.collapse') : $t('arrangement.expand') }}
       </button>
     </div>
-    <p v-if="!rows.length" class="arrangement__empty">Добавьте дорожку, чтобы собрать композицию</p>
+    <p v-if="!rows.length" class="arrangement__empty">{{ $t('arrangement.empty') }}</p>
     <div
       ref="viewport"
       class="arrangement__viewport"
       role="region"
-      aria-label="Таймлайн композиции"
+      :aria-label="$t('arrangement.timeline')"
       tabindex="0"
       @scroll="closePicker()"
     >
@@ -63,7 +63,7 @@
                 v-if="pattern"
                 type="button"
                 class="arrangement__cell-action"
-                :aria-label="`Действия: ${slotLabel(row.track, bar, number)}`"
+                :aria-label="$t('arrangement.actions', { slot: slotLabel(row.track, bar, number) })"
                 :aria-expanded="isPickerFor(row.track.id, bar)"
                 aria-haspopup="dialog"
                 @keydown.space.stop
@@ -75,7 +75,7 @@
                 v-else
                 type="button"
                 class="arrangement__block arrangement__block--empty"
-                :aria-label="`Добавить паттерн: ${slotLabel(row.track, bar, null)}`"
+                :aria-label="$t('arrangement.addPattern', { slot: slotLabel(row.track, bar, null) })"
                 :aria-expanded="isPickerFor(row.track.id, bar)"
                 aria-haspopup="dialog"
                 @keydown.space.stop
@@ -89,8 +89,8 @@
         <button
           type="button"
           class="arrangement__append"
-          aria-label="Добавить такт"
-          title="Добавить такт"
+          :aria-label="$t('arrangement.addBar')"
+          :title="$t('arrangement.addBar')"
           @keydown.space.stop
           @click="appendBar"
         >
@@ -130,16 +130,16 @@
             <span class="arrangement__thumbnail">
               <PatternPreview :pattern="pattern" :range="pickerRow.range" />
             </span>
-            Паттерн {{ index + 1 }}
+            {{ $t('arrangement.patternNumber', { number: index + 1 }) }}
           </button>
         </div>
 
         <div class="arrangement__picker-actions">
           <button type="button" class="arrangement__picker-action" @click="createPattern">
-            + Новый паттерн
+            {{ $t('arrangement.newPattern') }}
           </button>
           <button v-if="pickerPatternId !== null" type="button" class="arrangement__picker-action" @click="assignPattern(null)" >
-            Очистить такт
+            {{ $t('arrangement.clearBar') }}
           </button>
         </div>
       </div>
@@ -229,7 +229,10 @@ export default defineComponent({
     },
 
     pickerLabel() {
-      return `${this.pickerRow?.track.name} · Такт ${(this.picker?.bar ?? 0) + 1}`
+      return this.$t('arrangement.barLabel', {
+        track: this.pickerRow?.track.name ?? '',
+        bar: (this.picker?.bar ?? 0) + 1,
+      })
     },
 
     pickerPatternId() {
@@ -288,7 +291,11 @@ export default defineComponent({
 
   methods: {
     slotLabel(track: Track, bar: number, number: number | null): string {
-      return `${track.name} · Такт ${bar + 1} · ${number === null ? 'Пусто' : `Паттерн ${number}`}`
+      const pattern =
+        number === null
+          ? this.$t('arrangement.emptySlot')
+          : this.$t('arrangement.patternNumber', { number })
+      return this.$t('arrangement.slotLabel', { track: track.name, bar: bar + 1, pattern })
     },
 
     openCell(trackId: string, bar: number, patternId: string | null): void {

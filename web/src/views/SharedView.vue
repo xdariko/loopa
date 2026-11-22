@@ -1,11 +1,11 @@
 <template>
   <section class="page">
-    <h1 class="page__title">{{ project?.title ?? 'Общий проект' }}</h1>
-    <p v-if="loading" class="page__hint" role="status">Загружаем проект…</p>
+    <h1 class="page__title">{{ project?.title ?? $t('shared.title') }}</h1>
+    <p v-if="loading" class="page__hint" role="status">{{ $t('shared.loading') }}</p>
     <p v-if="error" class="page__error" role="alert">{{ error }}</p>
     <div v-if="project" class="page__actions">
       <button type="button" class="page__button page__button--primary" @click="togglePlayback">
-        {{ playback.isPlaying ? 'Пауза' : 'Воспроизвести' }}
+        {{ playback.isPlaying ? $t('common.pause') : $t('common.play') }}
       </button>
       <button
         v-if="!accountRequired"
@@ -14,10 +14,11 @@
         :disabled="copying || persistence.isSaving"
         @click="makeCopy"
       >
-        {{ copying ? 'Копируем…' : 'Сделать копию' }}
+        {{ copying ? $t('shared.copying') : $t('shared.copy') }}
       </button>
-      <RouterLink v-else to="/account" class="page__button">Войти или зарегистрироваться</RouterLink
-      >
+      <RouterLink v-else to="/account" class="page__button">
+        {{ $t('common.signInOrRegister') }}
+      </RouterLink>
     </div>
   </section>
 </template>
@@ -66,7 +67,7 @@ export default defineComponent({
           this.playback.setPreview(this.project)
         } catch (reason) {
           if (!signal.aborted) {
-            this.error = reason instanceof Error ? reason.message : 'Не удалось открыть проект.'
+            this.error = reason instanceof Error ? reason.message : this.$t('projects.openFailed')
           }
         } finally {
           if (!signal.aborted) {
@@ -89,14 +90,14 @@ export default defineComponent({
       try {
         await this.playback.toggle()
       } catch {
-        this.error = 'Не удалось запустить воспроизведение.'
+        this.error = this.$t('shared.playFailed')
       }
     },
 
     async makeCopy(): Promise<void> {
       if (
         this.persistence.isDirty &&
-        !window.confirm('Открыть копию без сохранения текущих изменений?')
+        !window.confirm(this.$t('shared.confirmCopy'))
       ) {
         return
       }
@@ -110,7 +111,7 @@ export default defineComponent({
       } catch (reason) {
         if (!signal.aborted) {
           this.accountRequired = reason instanceof AccountRequiredError
-          this.error = reason instanceof Error ? reason.message : 'Не удалось сделать копию.'
+          this.error = reason instanceof Error ? reason.message : this.$t('shared.copyFailed')
         }
       } finally {
         this.copying = false

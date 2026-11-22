@@ -1,6 +1,6 @@
 <template>
   <aside class="tracks">
-    <h2 class="tracks__heading">Дорожки</h2>
+    <h2 class="tracks__heading">{{ $t('tracks.title') }}</h2>
 
     <slot />
 
@@ -17,7 +17,7 @@
           class="tracks__name-input"
           :value="track.name"
           :maxlength="MAX_TRACK_NAME_LENGTH"
-          aria-label="Название дорожки"
+          :aria-label="$t('tracks.name')"
           @keydown.enter="finishRename"
           @keydown.esc="cancelRename"
           @blur="finishRename"
@@ -28,7 +28,7 @@
           class="tracks__item"
           :class="{ 'tracks__item--active': track.id === selectedTrackId }"
           :aria-pressed="track.id === selectedTrackId"
-          title="Двойной клик или F2 — переименовать"
+          :title="$t('tracks.renameHint')"
           @click="$emit('select', track.id)"
           @dblclick="startRename(track.id)"
           @keydown.f2="startRename(track.id)"
@@ -39,7 +39,7 @@
         <button
           type="button"
           class="tracks__remove"
-          :aria-label="`Удалить дорожку ${track.name}`"
+          :aria-label="$t('tracks.remove', { name: track.name })"
           @click="$emit('remove', track.id)"
         >
           ×
@@ -51,7 +51,7 @@
       <ul
         v-if="choosingInstrument"
         class="tracks__instruments"
-        aria-label="Инструмент новой дорожки"
+        :aria-label="$t('tracks.newInstrument')"
       >
         <li v-for="option in instrumentOptions" :key="option.label">
           <button type="button" class="tracks__action" @click="add(option.instrument)">
@@ -65,7 +65,7 @@
         :aria-expanded="choosingInstrument"
         @click="choosingInstrument = !choosingInstrument"
       >
-        {{ choosingInstrument ? 'Отмена' : '+ Дорожка' }}
+        {{ choosingInstrument ? $t('tracks.cancel') : $t('tracks.add') }}
       </button>
       <input
         ref="sampleInput"
@@ -82,7 +82,7 @@
         @keydown.space.stop
         @click="($refs.sampleInput as HTMLInputElement | undefined)?.click()"
       >
-        {{ importingSample ? 'Загрузка…' : 'Загрузить звук' }}
+        {{ importingSample ? $t('tracks.loadingSample') : $t('tracks.loadSample') }}
       </button>
       <p v-if="sampleError" class="tracks__error" role="alert">{{ sampleError }}</p>
     </div>

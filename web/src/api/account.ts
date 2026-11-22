@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import { apiFetch } from './projects'
 
 interface Account {
@@ -7,7 +9,7 @@ interface Account {
 export async function getAccount(signal: AbortSignal): Promise<Account> {
   const response = await apiFetch('/api/session', { signal })
   if (!response.ok) {
-    throw new Error('Не удалось проверить, выполнен ли вход.')
+    throw new Error(t('account.checkFailed'))
   }
   return response.json() as Promise<Account>
 }
@@ -24,16 +26,16 @@ export async function authenticate(
     body: JSON.stringify({ email, password, password_confirmation: passwordConfirmation }),
   })
   if (response.status === 401) {
-    throw new Error('Неверный адрес электронной почты или пароль.')
+    throw new Error(t('account.invalidCredentials'))
   }
   if (response.status === 422 && registering) {
-    throw new Error('Проверьте адрес и пароль. Возможно, аккаунт с таким адресом уже существует.')
+    throw new Error(t('account.registrationRejected'))
   }
   if (response.status === 429) {
-    throw new Error('Слишком много попыток. Попробуйте через несколько минут.')
+    throw new Error(t('account.rateLimited'))
   }
   if (!response.ok) {
-    throw new Error(registering ? 'Не удалось создать аккаунт.' : 'Не удалось войти.')
+    throw new Error(registering ? t('account.registerFailed') : t('account.signInFailed'))
   }
   return response.json() as Promise<Account>
 }
@@ -41,6 +43,6 @@ export async function authenticate(
 export async function signOut(): Promise<void> {
   const response = await apiFetch('/api/session', { method: 'DELETE' })
   if (!response.ok) {
-    throw new Error('Не удалось выйти из аккаунта.')
+    throw new Error(t('account.signOutFailed'))
   }
 }

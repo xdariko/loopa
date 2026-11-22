@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 export const SYNTH_PRESETS = ['lead', 'bass', 'keys', 'pad'] as const
 export type SynthPreset = (typeof SYNTH_PRESETS)[number]
 
@@ -25,19 +27,6 @@ const MIDI_B5 = 83
 export const MELODIC_PITCH_RANGE: PitchRange = { min: MIDI_C3, max: MIDI_B5 }
 export const DRUM_PITCH_RANGE: PitchRange = { min: 0, max: DRUM_VOICES.length - 1 }
 
-const SYNTH_PRESET_LABELS: Readonly<Record<SynthPreset, string>> = {
-  lead: 'Lead',
-  bass: 'Bass',
-  keys: 'Keys',
-  pad: 'Pad',
-}
-
-const DRUM_VOICE_LABELS: Readonly<Record<DrumVoice, string>> = {
-  kick: 'Kick',
-  snare: 'Snare',
-  hat: 'Hat',
-}
-
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const
 const SEMITONES_PER_OCTAVE = NOTE_NAMES.length
 const MIDI_OCTAVE_OFFSET = 1
@@ -53,7 +42,7 @@ export function isSharpPitch(instrument: Instrument, pitch: number): boolean {
 export function pitchLabel(instrument: Instrument, pitch: number): string {
   if (instrument.kind === 'drums') {
     const voice = DRUM_VOICES[pitch]
-    return voice ? DRUM_VOICE_LABELS[voice] : ''
+    return voice ? t(`instruments.${voice}`) : ''
   }
   const octave = Math.floor(pitch / SEMITONES_PER_OCTAVE) - MIDI_OCTAVE_OFFSET
   return `${noteName(pitch)}${octave}`
@@ -71,10 +60,10 @@ export function pitchRangeFor(instrument: Instrument): PitchRange {
 export function instrumentLabel(instrument: Instrument): string {
   switch (instrument.kind) {
     case 'synth':
-      return SYNTH_PRESET_LABELS[instrument.preset]
+      return t(`instruments.${instrument.preset}`)
     case 'drums':
-      return 'Drums'
+      return t('instruments.drums')
     case 'sample':
-      return 'Sample'
+      return t('instruments.sample')
   }
 }

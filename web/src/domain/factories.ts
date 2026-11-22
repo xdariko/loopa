@@ -1,7 +1,8 @@
+import { t } from '@/i18n'
+
 import {
   DEFAULT_BAR_COUNT,
   DEFAULT_BPM,
-  DEFAULT_PROJECT_TITLE,
   DEFAULT_SWING,
   DEFAULT_TRACK_VOLUME,
   MIN_EFFECT_AMOUNT,
@@ -53,7 +54,7 @@ export function createTrackLane(track: Track, barCount: number): ArrangementLane
 export function createProject(): Project {
   const tracks = STARTER_INSTRUMENTS.map((instrument) => createTrack(instrument))
   return {
-    title: DEFAULT_PROJECT_TITLE,
+    title: t('projects.untitled'),
     bpm: DEFAULT_BPM,
     swing: DEFAULT_SWING,
     tracks,

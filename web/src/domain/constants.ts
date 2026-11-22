@@ -24,5 +24,4 @@ export const MAX_TRACK_NAME_LENGTH = 32
 export const DEFAULT_BAR_COUNT = 4
 export const MIN_NOTE_DURATION = 1
 
-export const DEFAULT_PROJECT_TITLE = 'Без названия'
 export const HISTORY_LIMIT = 100

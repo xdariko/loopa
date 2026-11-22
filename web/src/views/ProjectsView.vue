@@ -1,21 +1,21 @@
 <template>
   <section class="page">
-    <h1 class="page__title">Проекты</h1>
-    <p v-if="loading" class="page__hint" role="status">Загружаем проекты…</p>
-    <p v-else-if="!error && !projects.length" class="page__hint">Сохранённых проектов пока нет.</p>
+    <h1 class="page__title">{{ $t('projects.title') }}</h1>
+    <p v-if="loading" class="page__hint" role="status">{{ $t('projects.loading') }}</p>
+    <p v-else-if="!error && !projects.length" class="page__hint">{{ $t('projects.empty') }}</p>
     <p v-if="error" class="page__error" role="alert">{{ error }}</p>
     <RouterLink v-if="accountRequired" to="/account" class="page__button">
-      Войти или зарегистрироваться
+      {{ $t('common.signInOrRegister') }}
     </RouterLink>
     <button v-else-if="loadFailed" type="button" class="page__button" @click="refresh">
-      Повторить
+      {{ $t('common.retry') }}
     </button>
     <ul v-if="projects.length" class="page__list">
       <li v-for="project in projects" :key="project.id" class="page__row">
         <div class="page__project">
           <p>{{ project.title }}</p>
           <time :datetime="project.updated_at" class="page__hint">{{
-            dateFormat.format(new Date(project.updated_at))
+            $d(new Date(project.updated_at), 'projectDate')
           }}</time>
         </div>
         <button
@@ -24,7 +24,7 @@
           :disabled="opening !== null || persistence.isSaving"
           @click="open(project.id)"
         >
-          {{ opening === project.id ? 'Открываем…' : 'Открыть' }}
+          {{ opening === project.id ? $t('projects.opening') : $t('common.open') }}
         </button>
       </li>
     </ul>
@@ -32,7 +32,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, markRaw } from 'vue'
+import { defineComponent } from 'vue'
 
 import { AccountRequiredError, getProject, listProjects, type ProjectSummary } from '@/api/projects'
 import { usePlaybackStore } from '@/stores/playback'
@@ -50,9 +50,6 @@ export default defineComponent({
       loadFailed: false,
       accountRequired: false,
       error: '',
-      dateFormat: markRaw(
-        new Intl.DateTimeFormat('ru', { dateStyle: 'medium', timeStyle: 'short' }),
-      ),
     }
   },
 
@@ -76,7 +73,7 @@ export default defineComponent({
         if (!this.controller.signal.aborted) {
           this.projects = []
           this.accountRequired = reason instanceof AccountRequiredError
-          this.error = reason instanceof Error ? reason.message : 'Не удалось загрузить проекты.'
+          this.error = reason instanceof Error ? reason.message : this.$t('projects.loadFailed')
           this.loadFailed = true
         }
       } finally {
@@ -87,7 +84,7 @@ export default defineComponent({
     async open(id: number): Promise<void> {
       if (
         this.persistence.isDirty &&
-        !window.confirm('Открыть проект без сохранения текущих изменений?')
+        !window.confirm(this.$t('projects.confirmOpen'))
       ) {
         return
       }
@@ -104,7 +101,7 @@ export default defineComponent({
             this.projects = []
             this.accountRequired = true
           }
-          this.error = reason instanceof Error ? reason.message : 'Не удалось открыть проект.'
+          this.error = reason instanceof Error ? reason.message : this.$t('projects.openFailed')
         }
       } finally {
         this.opening = null

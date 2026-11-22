@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import { defineStore } from 'pinia'
 import { shallowRef } from 'vue'
 
@@ -43,7 +45,7 @@ export async function prepareProject(remote: SharedProject, signal: AbortSignal)
     project = parseProject(remote.data)
   } catch (error) {
     if (error instanceof ProjectFormatError) {
-      throw new Error('Формат сохранённого проекта не поддерживается.')
+      throw new Error(t('projects.unsupportedFormat'))
     }
     throw error
   }
@@ -53,7 +55,7 @@ export async function prepareProject(remote: SharedProject, signal: AbortSignal)
     [...sampleIds(project)].map(async (id) => {
       const sample = samples.get(id)
       if (!sample) {
-        throw new Error('В сохранённом проекте отсутствует звуковой файл.')
+        throw new Error(t('projects.missingSample'))
       }
       if (!engine.getSampleFile(id)) {
         const file = await downloadSample(sample, signal)
@@ -108,7 +110,7 @@ export const useProjectPersistenceStore = defineStore('projectPersistence', {
       }
       const project = useProjectStore().project
       if (!project.title.trim()) {
-        throw new Error('Введите название проекта.')
+        throw new Error(t('projects.titleRequired'))
       }
       const engine = getAudioEngine()
       const resolved = new Map(this.saved?.samples.map(({ id }) => [id, id]))
@@ -118,7 +120,7 @@ export const useProjectPersistenceStore = defineStore('projectPersistence', {
         .map((id) => {
           const file = engine.getSampleFile(id)
           if (!file) {
-            throw new Error('Не найден исходный файл одного из звуков.')
+            throw new Error(t('projects.missingLocalSample'))
           }
           return { id, file }
         })

@@ -4,13 +4,13 @@
       type="button"
       class="transport__play"
       :class="{ 'transport__play--active': isPlaying }"
-      :aria-label="isPlaying ? 'Пауза' : 'Воспроизвести'"
+      :aria-label="isPlaying ? $t('common.pause') : $t('common.play')"
       @click="$emit('toggle')"
     >
       {{ isPlaying ? '❚❚' : '▶' }}
     </button>
 
-    <div v-if="mode" class="transport__modes" role="group" aria-label="Режим воспроизведения">
+    <div v-if="mode" class="transport__modes" role="group" :aria-label="$t('transport.playbackMode')">
       <button
         v-for="option in playbackModes"
         :key="option.value"
@@ -26,7 +26,7 @@
     </div>
 
     <label class="transport__field">
-      <span class="transport__label">BPM</span>
+      <span class="transport__label">{{ $t('transport.bpm') }}</span>
       <input
         class="transport__input"
         type="number"
@@ -38,7 +38,7 @@
     </label>
 
     <label v-if="patterns" class="transport__field">
-      <span class="transport__label">Паттерн</span>
+      <span class="transport__label">{{ $t('transport.pattern') }}</span>
       <select
         class="transport__input"
         :value="selectedPatternId"
@@ -58,7 +58,7 @@
         @keydown.space.stop
         @click="$emit('createPattern')"
       >
-        Новый
+        {{ $t('common.new') }}
       </button>
       <button
         type="button"
@@ -67,7 +67,7 @@
         @keydown.space.stop
         @click="$emit('duplicatePattern')"
       >
-        Дублировать
+        {{ $t('transport.duplicate') }}
       </button>
     </div>
 
@@ -106,11 +106,16 @@ export default defineComponent({
     return {
       MAX_BPM,
       MIN_BPM,
-      playbackModes: [
-        { value: 'composition', label: 'Композиция' },
-        { value: 'pattern', label: 'Паттерн' },
-      ] as readonly { value: PlaybackMode; label: string }[],
     }
+  },
+
+  computed: {
+    playbackModes(): readonly { value: PlaybackMode; label: string }[] {
+      return [
+        { value: 'composition', label: this.$t('arrangement.title') },
+        { value: 'pattern', label: this.$t('transport.pattern') },
+      ]
+    },
   },
 
   methods: {

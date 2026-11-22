@@ -276,7 +276,10 @@ export default defineComponent({
     },
 
     noteLabel(note: Note): string {
-      return `${pitchLabel(this.instrument, note.pitch)}, шаг ${note.step + 1}`
+      return this.$t('editor.noteLabel', {
+        pitch: pitchLabel(this.instrument, note.pitch),
+        step: note.step + 1,
+      })
     },
 
     draggedGroup(note: Note): readonly Note[] {

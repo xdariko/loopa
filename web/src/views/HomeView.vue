@@ -3,23 +3,23 @@
     <section class="home__hero" aria-labelledby="home-title">
       <div class="home__intro">
         <h1 id="home-title">
-          Собери
-          <span class="home__heading-accent">свой луп
+          {{ $t('home.heading') }}
+          <span class="home__heading-accent">
+            {{ $t('home.headingAccent') }}
             <span class="home__mark" aria-hidden="true"></span>
           </span>
         </h1>
         <p>
-          Loopa — музыкальный секвенсор в браузере.
-          <span>Расставляй ноты на сетке, добавляй свои звуки и собирай композицию из паттернов.</span
-          >
+          {{ $t('home.description') }}
+          <span>{{ $t('home.instructions') }}</span>
         </p>
         <div class="home__actions">
           <RouterLink :to="{ name: 'editor' }" class="home__button home__button--primary">
-            Открыть редактор
+            {{ $t('common.openEditor') }}
           </RouterLink>
 
           <RouterLink :to="{ name: 'account' }" class="home__button">
-            Войти или зарегистрироваться
+            {{ $t('common.signInOrRegister') }}
           </RouterLink>
         </div>
       </div>

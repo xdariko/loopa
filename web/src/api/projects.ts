@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import type { ProjectDocument } from '@/domain/serialization'
 
 const API_URL = (
@@ -36,23 +38,23 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     if (init?.signal?.aborted) {
       throw error
     }
-    throw new Error('Не удалось связаться с сервером.')
+    throw new Error(t('common.offline'))
   }
 }
 
 async function request(path: string, init?: RequestInit): Promise<Response> {
   const response = await apiFetch(path, init)
   if (response.status === 401) {
-    throw new AccountRequiredError('Войдите или зарегистрируйтесь, чтобы работать с проектами.')
+    throw new AccountRequiredError(t('projects.accountRequired'))
   }
   if (response.status === 404) {
-    throw new Error('Проект или звуковой файл не найден.')
+    throw new Error(t('projects.notFound'))
   }
   if (response.status === 422) {
-    throw new Error('Сервер отклонил данные проекта или звуковой файл.')
+    throw new Error(t('projects.rejected'))
   }
   if (!response.ok) {
-    throw new Error('Сервер не смог выполнить запрос.')
+    throw new Error(t('common.serverError'))
   }
   return response
 }
@@ -89,7 +91,7 @@ export async function downloadSample(sample: SavedSample, signal: AbortSignal): 
   const url = new URL(sample.url, new URL(API_URL || '/', window.location.origin))
   const response = await fetch(url, { signal })
   if (!response.ok) {
-    throw new Error('Не удалось скачать звук проекта.')
+    throw new Error(t('projects.downloadFailed'))
   }
   const blob = await response.blob()
   return new File([blob], decodeURIComponent(url.pathname.split('/').pop() || 'sample'), {

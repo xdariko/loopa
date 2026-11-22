@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import type { Track } from '@/domain/types'
 
 import { TrackChannel } from './channel'
@@ -84,7 +86,7 @@ export class AudioEngine {
       buffer = await this.ensureGraph().context.decodeAudioData(bytes)
     } catch {
       throw new SampleFileError(
-        'Не удалось открыть звук. Проверьте, что файл WAV или MP3 не повреждён.',
+        t('samples.decodeFailed'),
       )
     }
     signal.throwIfAborted()

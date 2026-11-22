@@ -1,26 +1,26 @@
 <template>
   <section class="page page--account">
     <div class="page__account-panel">
-      <h1 class="page__title">{{ email ? 'Аккаунт' : registering ? 'Регистрация' : 'Вход' }}</h1>
+      <h1 class="page__title">{{ email ? $t('account.title') : registering ? $t('account.registerTitle') : $t('account.signInTitle') }}</h1>
       <p v-if="error" class="page__error" role="alert">{{ error }}</p>
-      <p v-if="loading" class="page__hint" role="status">Проверяем аккаунт…</p>
+      <p v-if="loading" class="page__hint" role="status">{{ $t('account.checking') }}</p>
       <button v-else-if="loadFailed" type="button" class="page__button" @click="load">
-        Повторить
+        {{ $t('common.retry') }}
       </button>
       <template v-else-if="email">
         <p>{{ email }}</p>
         <div class="page__actions">
-          <RouterLink to="/projects" class="page__button">Мои проекты</RouterLink>
+          <RouterLink to="/projects" class="page__button">{{ $t('account.myProjects') }}</RouterLink>
 
-          <RouterLink to="/editor" class="page__button">Открыть редактор</RouterLink>
+          <RouterLink to="/editor" class="page__button">{{ $t('common.openEditor') }}</RouterLink>
           <button type="button" class="page__button" :disabled="disabled" @click="logout">
-            Выйти
+            {{ $t('account.signOut') }}
           </button>
         </div>
       </template>
       <form v-else class="page__form" @submit.prevent="submit">
         <label>
-          Электронная почта
+          {{ $t('account.email') }}
           <input
             v-model.trim="address"
             type="email"
@@ -31,7 +31,7 @@
         </label>
 
         <label>
-          Пароль
+          {{ $t('account.password') }}
           <input
             v-model="password"
             type="password"
@@ -42,16 +42,16 @@
         </label>
 
         <label v-if="registering">
-          Повторите пароль
+          {{ $t('account.repeatPassword') }}
           <input v-model="confirmation" type="password" autocomplete="new-password" required />
         </label>
 
         <div class="page__actions">
           <button class="page__button page__button--primary" type="submit" :disabled="disabled">
-            {{ registering ? 'Создать аккаунт' : 'Войти' }}
+            {{ registering ? $t('account.create') : $t('account.signIn') }}
           </button>
           <button type="button" class="page__button" :disabled="disabled" @click="toggleMode">
-            {{ registering ? 'Уже есть аккаунт' : 'Зарегистрироваться' }}
+            {{ registering ? $t('account.alreadyRegistered') : $t('account.register') }}
           </button>
         </div>
       </form>
@@ -137,7 +137,7 @@ export default defineComponent({
         return
       }
       if (this.registering && this.password !== this.confirmation) {
-        this.error = 'Пароли не совпадают.'
+        this.error = this.$t('account.passwordMismatch')
         return
       }
       this.busy = true
@@ -164,7 +164,7 @@ export default defineComponent({
     async logout(): Promise<void> {
       if (
         this.disabled ||
-        (this.persistence.isDirty && !window.confirm('Выйти без сохранения проекта?'))
+        (this.persistence.isDirty && !window.confirm(this.$t('account.confirmSignOut')))
       ) {
         return
       }
@@ -183,7 +183,7 @@ export default defineComponent({
     },
 
     report(cause: unknown): void {
-      this.error = cause instanceof Error ? cause.message : 'Не удалось выполнить запрос.'
+      this.error = cause instanceof Error ? cause.message : this.$t('common.requestFailed')
     },
   },
 })

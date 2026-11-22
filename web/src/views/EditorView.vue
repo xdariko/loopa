@@ -57,7 +57,7 @@
           @move="editor.moveNotes"
           @resize="editor.resizeNotes"
         />
-        <p v-else class="editor__placeholder">Добавьте дорожку, чтобы расставлять ноты</p>
+        <p v-else class="editor__placeholder">{{ $t('editor.emptyGrid') }}</p>
       </div>
 
       <ArrangementPanel
@@ -202,12 +202,12 @@ export default defineComponent({
       this.sampleError = ''
       try {
         const sampleId = await getAudioEngine().importSample(file, this.sampleImport.signal)
-        const name = file.name.replace(/\.[^.]+$/, '').trim() || 'Сэмпл'
+        const name = file.name.replace(/\.[^.]+$/, '').trim() || this.$t('editor.unnamedSample')
         this.editor.addTrack({ kind: 'sample', sampleId }, name)
       } catch (error) {
         if (!this.sampleImport.signal.aborted) {
           this.sampleError =
-            error instanceof SampleFileError ? error.message : 'Не удалось загрузить звук.'
+            error instanceof SampleFileError ? error.message : this.$t('samples.loadFailed')
         }
       } finally {
         this.importingSample = false

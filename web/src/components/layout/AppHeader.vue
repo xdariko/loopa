@@ -10,7 +10,7 @@
       v-model="projectTitle"
       class="header__title"
       type="text"
-      aria-label="Название проекта"
+      :aria-label="$t('header.projectTitle')"
       @focus="status = ''"
     />
 
@@ -23,9 +23,9 @@
         @keydown.space.stop
         @click="newProject"
       >
-        Новый
+        {{ $t('common.new') }}
       </button>
-      <RouterLink v-if="account.email" to="/projects" class="header__link">Открыть</RouterLink>
+      <RouterLink v-if="account.email" to="/projects" class="header__link">{{ $t('common.open') }}</RouterLink>
 
       <template v-if="isEditor">
         <button
@@ -36,7 +36,7 @@
           @keydown.space.stop
           @click="copyLink"
         >
-          Скопировать ссылку
+          {{ $t('header.copyLink') }}
         </button>
         <button
           type="button"
@@ -45,24 +45,24 @@
           @keydown.space.stop
           @click="save"
         >
-          {{ persistence.isSaving ? 'Сохраняем…' : 'Сохранить' }}
+          {{ persistence.isSaving ? $t('header.saving') : $t('header.save') }}
         </button>
       </template>
 
-      <RouterLink v-if="account.email" to="/account" class="header__link">Аккаунт</RouterLink>
+      <RouterLink v-if="account.email" to="/account" class="header__link">{{ $t('account.title') }}</RouterLink>
     </nav>
 
     <div v-if="isEditor && (status || shareLink)" class="header__feedback">
       <p v-if="status" role="status">{{ status }}</p>
       <RouterLink v-if="accountRequired" to="/account" class="header__button">
-        Войти или зарегистрироваться
+        {{ $t('common.signInOrRegister') }}
       </RouterLink>
       <input
         v-if="shareLink"
         class="header__share-link"
         :value="shareLink"
         readonly
-        aria-label="Ссылка на проект"
+        :aria-label="$t('header.projectLink')"
         @focus="selectLink"
       />
     </div>
@@ -147,21 +147,21 @@ export default defineComponent({
       try {
         await this.persistence.save()
         this.status = this.persistence.isDirty
-          ? 'Сохранено. Более свежие изменения ещё не сохранены.'
-          : 'Проект сохранён.'
+          ? this.$t('header.newerChanges')
+          : this.$t('header.saved')
       } catch (error) {
         this.accountRequired = error instanceof AccountRequiredError
         if (this.accountRequired) {
           this.account.email = null
         }
-        this.status = error instanceof Error ? error.message : 'Не удалось сохранить проект.'
+        this.status = error instanceof Error ? error.message : this.$t('header.saveFailed')
       }
     },
 
     newProject(): void {
       if (
         this.persistence.isDirty &&
-        !window.confirm('Начать новый проект без сохранения изменений?')
+        !window.confirm(this.$t('header.confirmNew'))
       ) {
         return
       }
@@ -181,10 +181,10 @@ export default defineComponent({
       const url = new URL(href, window.location.origin).href
       try {
         await navigator.clipboard.writeText(url)
-        this.status = 'Ссылка скопирована.'
+        this.status = this.$t('header.linkCopied')
       } catch {
         this.shareLink = url
-        this.status = 'Скопируйте ссылку из поля.'
+        this.status = this.$t('header.copyFromField')
       }
     },
 

@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 export const SAMPLE_FILE_ACCEPT = '.wav,.mp3,audio/wav,audio/mpeg'
 const MAX_SAMPLE_BYTES = 5 * 1024 * 1024
 const WAV_HEADER_LENGTH = 12
@@ -49,21 +51,21 @@ function isMp3(bytes: Uint8Array): boolean {
 
 export async function readSampleFile(file: File): Promise<ArrayBuffer> {
   if (file.size === 0) {
-    throw new SampleFileError('Файл пуст. Выберите другой звук.')
+    throw new SampleFileError(t('samples.empty'))
   }
   if (file.size > MAX_SAMPLE_BYTES) {
-    throw new SampleFileError('Файл слишком большой. Максимальный размер — 5 МБ.')
+    throw new SampleFileError(t('samples.tooLarge'))
   }
 
   let buffer: ArrayBuffer
   try {
     buffer = await file.arrayBuffer()
   } catch {
-    throw new SampleFileError('Не удалось прочитать файл. Выберите его ещё раз.')
+    throw new SampleFileError(t('samples.readFailed'))
   }
   const bytes = new Uint8Array(buffer)
   if (!isWav(bytes) && !isMp3(bytes)) {
-    throw new SampleFileError('Выберите аудиофайл в формате WAV или MP3.')
+    throw new SampleFileError(t('samples.unsupportedFormat'))
   }
   return buffer
 }
