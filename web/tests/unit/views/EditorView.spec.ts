@@ -17,7 +17,7 @@ describe('EditorView shortcuts', () => {
   })
 
   function mountEditor() {
-    return mount(EditorView, { global: { stubs: { RouterLink: true } } })
+    return mount(EditorView, { global: { stubs: { RouterLink: true, SpectrumView: true } } })
   }
 
   it('deletes, restores and deselects notes from the keyboard', () => {
@@ -45,7 +45,9 @@ describe('EditorView tracks', () => {
   })
 
   it('opens the clicked track in the grid', async () => {
-    const wrapper = mount(EditorView, { global: { stubs: { RouterLink: true } } })
+    const wrapper = mount(EditorView, {
+      global: { stubs: { RouterLink: true, SpectrumView: true } },
+    })
     const editor = useEditorStore()
 
     await wrapper.findAll('.tracks__item')[2]?.trigger('click')

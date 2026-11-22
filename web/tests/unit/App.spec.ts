@@ -7,7 +7,9 @@ import router from '@/router'
 
 async function mountAt(path: string) {
   await router.push(path)
-  return mount(App, { global: { plugins: [createPinia(), router] } })
+  return mount(App, {
+    global: { plugins: [createPinia(), router], stubs: { SpectrumView: true } },
+  })
 }
 
 describe('App', () => {

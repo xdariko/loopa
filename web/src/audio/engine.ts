@@ -2,6 +2,7 @@ import type { Track } from '@/domain/types'
 
 import { TrackChannel } from './channel'
 import { EffectsBus } from './effects'
+import { SPECTRUM_FFT_SIZE } from './spectrum'
 import type { NoteEvent, Voice } from './types'
 
 const MASTER_LEVEL = 0.8
@@ -10,6 +11,7 @@ interface AudioGraph {
   readonly context: AudioContext
   readonly master: GainNode
   readonly effects: EffectsBus
+  readonly analyser: AnalyserNode
 }
 
 export class AudioEngine {
@@ -60,6 +62,14 @@ export class AudioEngine {
     this.voices.add(channel.play(note))
   }
 
+  readSpectrum(target: Uint8Array<ArrayBuffer>): void {
+    if (this.graph) {
+      this.graph.analyser.getByteFrequencyData(target)
+    } else {
+      target.fill(0)
+    }
+  }
+
   stopAll(): void {
     const now = this.currentTime
     this.voices.forEach((voice) => voice.stop(now))
@@ -74,9 +84,12 @@ export class AudioEngine {
     const master = context.createGain()
     master.gain.value = MASTER_LEVEL
     master.connect(context.destination)
+    const analyser = context.createAnalyser()
+    analyser.fftSize = SPECTRUM_FFT_SIZE
+    master.connect(analyser)
     const effects = new EffectsBus(context, master)
     effects.setDelayTime(this.delaySeconds)
-    this.graph = { context, master, effects }
+    this.graph = { context, master, effects, analyser }
     this.applyTracks(this.graph)
     return this.graph
   }

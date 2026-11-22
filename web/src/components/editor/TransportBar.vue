@@ -29,6 +29,10 @@
       </select>
     </label>
 
+    <div class="transport__display">
+      <slot />
+    </div>
+
     <button type="button" class="transport__menu" aria-label="Действия с паттерном">⋯</button>
   </div>
 </template>

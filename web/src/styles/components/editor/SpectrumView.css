@@ -1,0 +1,6 @@
+.spectrum {
+  display: block;
+  width: 100%;
+  max-width: var(--spectrum-width);
+  height: var(--spectrum-height);
+}

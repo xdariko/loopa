@@ -37,6 +37,13 @@
   border-radius: var(--radius-sm);
 }
 
+.transport__display {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .transport__menu {
   width: 32px;
   height: 32px;

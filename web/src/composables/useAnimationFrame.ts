@@ -1,11 +1,11 @@
 import { onScopeDispose, watch } from 'vue'
 
-export function useAnimationFrame(onFrame: () => void, active: () => boolean): void {
+export function useAnimationFrame(onFrame: (time: number) => void, active: () => boolean): void {
   let frame: number | null = null
 
-  function loop(): void {
+  function loop(time: number): void {
     frame = requestAnimationFrame(loop)
-    onFrame()
+    onFrame(time)
   }
 
   function start(): void {

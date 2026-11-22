@@ -18,4 +18,13 @@ describe('TransportBar', () => {
     expect(wrapper.emitted('bpmChange')).toEqual([[999]])
     expect(input.element.value).toBe('120')
   })
+
+  it('shows the slotted display next to the controls', () => {
+    const wrapper = mount(TransportBar, {
+      props: { isPlaying: false, bpm: 120 },
+      slots: { default: '<canvas class="probe" />' },
+    })
+
+    expect(wrapper.find('.transport__display .probe').exists()).toBe(true)
+  })
 })

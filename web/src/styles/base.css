@@ -13,6 +13,7 @@
   --color-note-playing: #7d93ff;
   --color-note-glow: rgb(79 107 237 / 55%);
   --color-playhead: #ff8a3d;
+  --color-spectrum: var(--color-accent);
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-size-sm: 12px;
@@ -36,6 +37,8 @@
   --grid-resize-handle-width: 6px;
   --playhead-width: 2px;
   --note-glow-radius: 8px;
+  --spectrum-width: 280px;
+  --spectrum-height: 32px;
 
   color-scheme: light;
 }

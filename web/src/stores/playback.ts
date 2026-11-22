@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 
 import { getAudioEngine } from '@/audio/engine'
 import { createScheduler, stepDuration, type ScheduledStep } from '@/audio/scheduler'
+import type { SpectrumSource } from '@/audio/spectrum'
 import { PlaybackTimeline, type TimelineSnapshot } from '@/audio/timeline'
 import { STEPS_PER_BAR } from '@/domain/constants'
 import { notesStartingAt } from '@/domain/notes'
@@ -41,6 +42,8 @@ export const usePlaybackStore = defineStore('playback', () => {
       timeline.addNote({ id: note.id, start: time, end: time + noteDuration })
     })
   }
+
+  const spectrum: SpectrumSource = { read: (target) => engine.readSpectrum(target) }
 
   function sample(): TimelineSnapshot {
     return timeline.advanceTo(engine.audibleTime)
@@ -84,5 +87,5 @@ export const usePlaybackStore = defineStore('playback', () => {
     }
   }
 
-  return { isPlaying, play, pause, toggle, sample }
+  return { isPlaying, play, pause, toggle, sample, spectrum }
 })
