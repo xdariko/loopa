@@ -1,17 +1,20 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { saveProject, uploadSample } from '@/api/projects'
+import { type downloadSample, saveProject, uploadSample } from '@/api/projects'
+import type { getAudioEngine } from '@/audio/engine'
 import { useEditorStore } from '@/stores/editor'
 import { useProjectStore } from '@/stores/project'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
-const engine = vi.hoisted(() => ({ getSampleFile: vi.fn() }))
+const engine = vi.hoisted(() => ({
+  getSampleFile: vi.fn<ReturnType<typeof getAudioEngine>['getSampleFile']>(),
+}))
 vi.mock('@/audio/engine', () => ({ getAudioEngine: () => engine }))
 vi.mock('@/api/projects', () => ({
-  downloadSample: vi.fn(),
-  saveProject: vi.fn(),
-  uploadSample: vi.fn(),
+  downloadSample: vi.fn<typeof downloadSample>(),
+  saveProject: vi.fn<typeof saveProject>(),
+  uploadSample: vi.fn<typeof uploadSample>(),
 }))
 
 describe('project persistence', () => {

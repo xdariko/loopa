@@ -4,7 +4,7 @@ import { readSampleFile } from '@/audio/sampleFile'
 
 function fileFor(bytes: Uint8Array<ArrayBuffer>, name: string): File {
   const file = new File([bytes], name)
-  file.arrayBuffer = vi.fn(async () => bytes.buffer)
+  file.arrayBuffer = vi.fn<File['arrayBuffer']>(async () => bytes.buffer)
   return file
 }
 
