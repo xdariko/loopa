@@ -14,11 +14,7 @@ import type { ArrangementLane, Pattern, Project, Track, TrackEffects } from './t
 
 export type TrackMixControl = 'volume' | keyof TrackEffects
 
-function replaceById<T extends { readonly id: string }>(
-  items: readonly T[],
-  id: string,
-  update: (item: T) => T,
-): readonly T[] {
+function replaceById<T extends { readonly id: string }>(items: readonly T[], id: string, update: (item: T) => T): readonly T[] {
   const item = items.find((current) => current.id === id)
   if (!item) {
     return items
@@ -43,21 +39,12 @@ export function nextTrackName(project: Project, baseName: string): string {
   return name
 }
 
-export function updateTrack(
-  project: Project,
-  trackId: string,
-  update: (track: Track) => Track,
-): Project {
+export function updateTrack(project: Project, trackId: string, update: (track: Track) => Track): Project {
   const tracks = replaceById(project.tracks, trackId, update)
   return tracks === project.tracks ? project : { ...project, tracks }
 }
 
-export function updatePattern(
-  project: Project,
-  trackId: string,
-  patternId: string,
-  update: (pattern: Pattern) => Pattern,
-): Project {
+export function updatePattern(project: Project, trackId: string, patternId: string, update: (pattern: Pattern) => Pattern): Project {
   return updateTrack(project, trackId, (track) => {
     const patterns = replaceById(track.patterns, patternId, update)
     return patterns === track.patterns ? track : { ...track, patterns }
@@ -84,12 +71,7 @@ export function appendArrangementBar(project: Project): Project {
   }
 }
 
-export function setArrangementPattern(
-  project: Project,
-  trackId: string,
-  bar: number,
-  patternId: string | null,
-): Project {
+export function setArrangementPattern(project: Project, trackId: string, bar: number, patternId: string | null): Project {
   const track = findTrack(project, trackId)
   const lane = project.arrangement.lanes[trackId]
   if (!track || !lane || lane[bar] === undefined || lane[bar] === patternId) {
@@ -149,12 +131,7 @@ export function setTrackMuted(project: Project, trackId: string, muted: boolean)
   )
 }
 
-export function setTrackMixLevel(
-  project: Project,
-  trackId: string,
-  control: TrackMixControl,
-  level: number,
-): Project {
+export function setTrackMixLevel(project: Project, trackId: string, control: TrackMixControl, level: number): Project {
   if (!Number.isFinite(level)) {
     return project
   }

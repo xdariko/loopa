@@ -11,9 +11,7 @@ export function noteEnd(note: Note): number {
 }
 
 function notesOverlap(first: Note, second: Note): boolean {
-  return (
-    first.pitch === second.pitch && first.step < noteEnd(second) && second.step < noteEnd(first)
-  )
+  return ( first.pitch === second.pitch && first.step < noteEnd(second) && second.step < noteEnd(first))
 }
 
 function fitsGrid(pattern: Pattern, note: Note): boolean {
@@ -30,11 +28,7 @@ function fitsPitchRange(note: Note, range: PitchRange): boolean {
   return Number.isInteger(note.pitch) && note.pitch >= range.min && note.pitch <= range.max
 }
 
-export function canPlaceNotes(
-  pattern: Pattern,
-  placed: readonly Note[],
-  range: PitchRange,
-): boolean {
+export function canPlaceNotes(pattern: Pattern, placed: readonly Note[], range: PitchRange): boolean {
   const placedIds = new Set(placed.map((note) => note.id))
   const result = [...pattern.notes.filter((note) => !placedIds.has(note.id)), ...placed]
   return placed.every(
@@ -69,12 +63,7 @@ export function addNote(pattern: Pattern, note: Note, range: PitchRange): Patter
   return { ...pattern, notes: [...pattern.notes, note] }
 }
 
-export function moveNotes(
-  pattern: Pattern,
-  noteIds: readonly string[],
-  offset: NoteOffset,
-  range: PitchRange,
-): Pattern {
+export function moveNotes(pattern: Pattern, noteIds: readonly string[], offset: NoteOffset, range: PitchRange): Pattern {
   if (offset.steps === 0 && offset.pitches === 0) {
     return pattern
   }
@@ -86,12 +75,7 @@ export function moveNotes(
   return replaceNotes(pattern, moved, range)
 }
 
-export function resizeNotes(
-  pattern: Pattern,
-  noteIds: readonly string[],
-  durationChange: number,
-  range: PitchRange,
-): Pattern {
+export function resizeNotes(pattern: Pattern, noteIds: readonly string[], durationChange: number, range: PitchRange): Pattern {
   if (durationChange === 0) {
     return pattern
   }

@@ -23,6 +23,7 @@ import { useProjectStore } from './project'
 type PatternEdit = (pattern: Pattern, range: PitchRange) => Pattern
 
 export const useEditorStore = defineStore('editor', {
+  // айди трека, паттерна и нот
   state() {
     return {
       selectedTrackId: null as string | null,
@@ -30,25 +31,28 @@ export const useEditorStore = defineStore('editor', {
       selectedNoteIds: shallowRef<readonly string[]>([]),
     }
   },
+
   getters: {
     selectedTrack(): Track | null {
       const { project } = useProjectStore()
-      const chosen = this.selectedTrackId
-        ? projects.findTrack(project, this.selectedTrackId)
-        : undefined
+      const chosen = this.selectedTrackId ? projects.findTrack(project, this.selectedTrackId) : undefined
       return chosen ?? project.tracks[0] ?? null
     },
+
     selectedPattern(): Pattern | null {
       const patterns = this.selectedTrack?.patterns ?? []
       const chosen = patterns.find((pattern) => pattern.id === this.selectedPatternId)
       return chosen ?? patterns[0] ?? null
     },
+
     selectedNotes(): readonly Note[] {
       const ids = new Set(this.selectedNoteIds)
       return this.selectedPattern?.notes.filter((note) => ids.has(note.id)) ?? []
     },
   },
+
   actions: {
+    // применяет правку к текущему паттерну через стор проекта, с учётом диапазона инструмента
     editSelectedPattern(edit: PatternEdit): boolean {
       const track = this.selectedTrack
       const pattern = this.selectedPattern
@@ -60,15 +64,18 @@ export const useEditorStore = defineStore('editor', {
         projects.updatePattern(project, track.id, pattern.id, (current) => edit(current, range)),
       )
     },
+
     selectTrack(trackId: string | null): void {
       this.selectedTrackId = trackId
       this.selectedPatternId = null
       this.clearSelection()
     },
+
     selectPattern(patternId: string): void {
       this.selectedPatternId = patternId
       this.clearSelection()
     },
+
     addPattern(pattern: Pattern): boolean {
       const track = this.selectedTrack
       if (!track) {
@@ -82,9 +89,12 @@ export const useEditorStore = defineStore('editor', {
       }
       return added
     },
+
     createSelectedTrackPattern(): boolean {
       return this.addPattern(createPattern())
     },
+
+    // создаёт паттерн и ставит его в указанный такт композиции одной правкой
     createPatternInBar(trackId: string, bar: number): boolean {
       const pattern = createPattern()
       const created = useProjectStore().change((project) => {
@@ -98,25 +108,29 @@ export const useEditorStore = defineStore('editor', {
       }
       return created
     },
+
     duplicateSelectedPattern(): boolean {
       const pattern = this.selectedPattern
       return pattern ? this.addPattern(duplicatePattern(pattern)) : false
     },
+
     selectNote(noteId: string): void {
       this.selectedNoteIds = [noteId]
     },
+
     toggleNoteSelection(noteId: string): void {
       const ids = this.selectedNoteIds
-      this.selectedNoteIds = ids.includes(noteId)
-        ? ids.filter((id) => id !== noteId)
-        : [...ids, noteId]
+      this.selectedNoteIds = ids.includes(noteId) ? ids.filter((id) => id !== noteId) : [...ids, noteId]
     },
+
     addToSelection(noteIds: readonly string[]): void {
       this.selectedNoteIds = [...new Set([...this.selectedNoteIds, ...noteIds])]
     },
+
     clearSelection(): void {
       this.selectedNoteIds = []
     },
+
     addNote(position: NotePosition, duration?: number): boolean {
       const note = createNote(position, duration)
       const added = this.editSelectedPattern((pattern, range) =>
@@ -127,21 +141,25 @@ export const useEditorStore = defineStore('editor', {
       }
       return added
     },
+
     moveNotes(noteIds: readonly string[], offset: NoteOffset): boolean {
       return this.editSelectedPattern((pattern, range) =>
         notes.moveNotes(pattern, noteIds, offset, range),
       )
     },
+
     resizeNotes(noteIds: readonly string[], durationChange: number): boolean {
       return this.editSelectedPattern((pattern, range) =>
         notes.resizeNotes(pattern, noteIds, durationChange, range),
       )
     },
+
     deleteSelectedNotes(): boolean {
       const noteIds = this.selectedNoteIds
       this.clearSelection()
       return this.editSelectedPattern((pattern) => notes.removeNotes(pattern, noteIds))
     },
+
     addTrack(instrument: Instrument, name = instrumentLabel(instrument)): boolean {
       const { project } = useProjectStore()
       const track = createTrack(instrument, projects.nextTrackName(project, name))
@@ -152,6 +170,7 @@ export const useEditorStore = defineStore('editor', {
       }
       return added
     },
+
     removeTrack(trackId: string): boolean {
       const wasSelected = this.selectedTrack?.id === trackId
       const index = useProjectStore().project.tracks.findIndex((track) => track.id === trackId)
@@ -169,6 +188,7 @@ export const useEditorStore = defineStore('editor', {
       }
       return removed
     },
+
     renameTrack(trackId: string, name: string): boolean {
       return useProjectStore().change((project) => projects.renameTrack(project, trackId, name))
     },

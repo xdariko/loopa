@@ -18,6 +18,7 @@ import type { Project } from '@/domain/types'
 import { useEditorStore } from './editor'
 import { useProjectStore } from './project'
 
+// собирает уникальные айдишники сэмплов, на которые ссылаются треки
 function sampleIds(project: Project): Set<string> {
   return new Set(
     project.tracks.flatMap(({ instrument }) =>
@@ -26,6 +27,7 @@ function sampleIds(project: Project): Set<string> {
   )
 }
 
+// создаёт копию проекта с серверными айдишниками сэмплов для отправки в апи
 function remapSamples(project: Project, resolve: (id: string) => string | null): Project {
   return {
     ...project,
@@ -39,6 +41,7 @@ function remapSamples(project: Project, resolve: (id: string) => string | null):
   }
 }
 
+// проверяет данные проекта и загружает в аудиодвижок недостающие сэмплы
 export async function prepareProject(remote: SharedProject, signal: AbortSignal): Promise<Project> {
   let project: Project
   try {
@@ -70,17 +73,20 @@ export async function prepareProject(remote: SharedProject, signal: AbortSignal)
 export const useProjectPersistenceStore = defineStore('projectPersistence', {
   state() {
     return {
-      saved: shallowRef<SavedProject | null>(null),
-      shareToken: null as string | null,
-      lastSaved: shallowRef<Project | null>(useProjectStore().project),
+      saved: shallowRef<SavedProject | null>(null), // запись проекта от сервера
+      shareToken: null as string | null, // токен для шаринга проекта
+      lastSaved: shallowRef<Project | null>(useProjectStore().project), // локальный снимок проекта
       isSaving: false,
-      uploadedIds: new Map<string, string>(),
+      uploadedIds: new Map<string, string>(), // локальный айдишник сэмпла -> серверный айдишник
     }
   },
+
   getters: {
     isDirty: (state) => useProjectStore().project !== state.lastSaved,
   },
+
   actions: {
+    // загружает проект в редактор, сбрасывает историю и выбирает первый трек.
     replaceProject(project: Project, remote: SavedProject | null): void {
       this.uploadedIds.clear()
       this.saved = remote
@@ -89,13 +95,19 @@ export const useProjectPersistenceStore = defineStore('projectPersistence', {
       this.lastSaved = project
       useEditorStore().selectTrack(project.tracks[0]?.id ?? null)
     },
+
+    // подготавливает сохранённый проект и открывает его в редакторе
     async open(remote: SavedProject, signal: AbortSignal): Promise<void> {
       const project = await prepareProject(remote, signal)
       this.replaceProject(project, remote)
     },
+
+    // создаем открываем новый проект в редакторе
     startNew(): void {
       this.replaceProject(createProject(), null)
     },
+
+    // оставляет проект в редакторе и убирает привязку к сохранённой записи. чтобы при входе проект не исчез
     detachSavedProject(): void {
       if (this.saved) {
         this.lastSaved = null
@@ -104,6 +116,8 @@ export const useProjectPersistenceStore = defineStore('projectPersistence', {
       this.saved = null
       this.shareToken = null
     },
+
+    // загружает новые сэмплы и отправляет снимок проекта в апи
     async save(): Promise<void> {
       if (this.isSaving) {
         return

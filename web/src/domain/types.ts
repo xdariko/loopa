@@ -1,5 +1,7 @@
 import type { Instrument } from './instruments'
 
+// все все типы из которых состоит проект
+
 export interface NotePosition {
   readonly step: number
   readonly pitch: number
@@ -43,8 +45,10 @@ export interface Track {
   readonly patterns: readonly Pattern[]
 }
 
+// дорожка композиции, массив айдишников
 export type ArrangementLane = readonly (string | null)[]
 
+//композиция, количество тактов и дорожки
 export interface Arrangement {
   readonly barCount: number
   readonly lanes: Readonly<Record<string, ArrangementLane>>

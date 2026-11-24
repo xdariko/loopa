@@ -12,27 +12,36 @@ import type { Pattern, Project } from '@/domain/types'
 import { useEditorStore } from './editor'
 import { useProjectStore } from './project'
 
+// скрипт для управления воспроизведением проекта и паттернов, синхронизации с аудио движком и отслеживания состояния воспроизведения
+
 const DELAY_STEPS = 3
 export type PlaybackMode = 'composition' | 'pattern'
 
 export const usePlaybackStore = defineStore('playback', {
   state() {
-    const preview = shallowRef<Project | null>(null)
-    const scheduler = shallowRef<ReturnType<typeof createScheduler> | null>(null)
+    const preview = shallowRef<Project | null>(null) // проект для предпрослушивания
+    const scheduler = shallowRef<ReturnType<typeof createScheduler> | null>(null) // планировщик шагов
     const projectStore = useProjectStore()
     const engine = getAudioEngine()
     const activeProject = () => preview.value ?? projectStore.project
+
+    // следим за списком треков
     watch(
       () => activeProject().tracks,
       (tracks) => engine.syncTracks(tracks),
       { immediate: true },
     )
+
+    // следим за темпом и задержкой
     watch(
       () => activeProject().bpm,
       (bpm) => engine.setDelayTime(stepDuration(bpm) * DELAY_STEPS),
       { immediate: true },
     )
+
+    // при уничтожении стора останавливаем планировщик
     onScopeDispose(() => scheduler.value?.stop())
+
     return {
       isPlaying: false,
       mode: 'composition' as PlaybackMode,
@@ -42,21 +51,27 @@ export const usePlaybackStore = defineStore('playback', {
       playRequest: 0,
     }
   },
+
   getters: {
     engine() {
       return getAudioEngine()
     },
+
     activeProject(): Project {
       return this.preview ?? useProjectStore().project
     },
+
     activeMode(): PlaybackMode {
       return this.preview ? 'composition' : this.mode
     },
+
     spectrum(): SpectrumSource {
       return { read: (target) => this.engine.readSpectrum(target) }
     },
   },
+
   actions: {
+    // возвращает планировщик или создаёт и сохраняет его при первом вызове
     getScheduler(): ReturnType<typeof createScheduler> {
       if (this.scheduler) {
         return this.scheduler
@@ -73,6 +88,8 @@ export const usePlaybackStore = defineStore('playback', {
       })
       return this.scheduler
     },
+
+    // выбирает паттерны для текущего шага и отмечает шаг для подсветки
     playStep(scheduled: ScheduledStep): void {
       const playingPatterns = new Map<string, string>()
       if (this.activeMode === 'pattern') {
@@ -101,12 +118,9 @@ export const usePlaybackStore = defineStore('playback', {
         this.timeline.addStep(step, bar, playingPatterns)
       }
     },
-    playPatternStep(
-      trackId: string,
-      pattern: Pattern,
-      scheduled: ScheduledStep,
-      stepsRemaining = pattern.steps - scheduled.step,
-    ): void {
+
+    // запускает ноты, которые начинаются на этом шаге, и записывает время их звучания
+    playPatternStep(trackId: string, pattern: Pattern, scheduled: ScheduledStep, stepsRemaining = pattern.steps - scheduled.step): void {
       const { step, time, stepDuration: duration } = scheduled
       notesStartingAt(pattern, step).forEach((note) => {
         const noteDuration = Math.min(note.duration, stepsRemaining) * duration
@@ -124,9 +138,13 @@ export const usePlaybackStore = defineStore('playback', {
         }
       })
     },
+
+    // возвращает позицию и звучащие ноты по слышимому времени для подсветки
     sample(): TimelineSnapshot {
       return this.timeline.advanceTo(this.engine.audibleTime)
     },
+
+    // включает аудиодвижок и запускает планировщик
     async play(): Promise<void> {
       if (this.isPlaying) {
         return
@@ -145,6 +163,7 @@ export const usePlaybackStore = defineStore('playback', {
         throw error
       }
     },
+
     pause(): void {
       this.playRequest += 1
       this.isPlaying = false
@@ -152,22 +171,26 @@ export const usePlaybackStore = defineStore('playback', {
       this.engine.stopAll()
       this.timeline.clear()
     },
+
     setMode(nextMode: PlaybackMode): void {
       if (!this.isPlaying && this.mode !== nextMode) {
         this.mode = nextMode
         this.scheduler?.reset()
       }
     },
+
     setPreview(project: Project | null): void {
       if (this.preview !== project) {
         this.reset()
         this.preview = project
       }
     },
+
     reset(): void {
       this.pause()
       this.scheduler?.reset()
     },
+
     async toggle(): Promise<void> {
       if (this.isPlaying) {
         this.pause()

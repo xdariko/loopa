@@ -16,6 +16,9 @@ import { pitchRangeFor, SYNTH_PRESETS } from './instruments'
 import { canPlaceNote } from './notes'
 import type { Project, Track } from './types'
 
+// скрипт для проверки формата проекта и сериализации/десериализации с помощью ВАЛИБОТА
+// создаются схемы для проверки структуры проекта, треков, паттернов и нот, а также функции для сериализации и парсинга проекта
+
 export interface ProjectDocument extends Project {
   readonly version: typeof PROJECT_FORMAT_VERSION
 }
@@ -40,6 +43,7 @@ function hasUniqueIds(items: readonly { readonly id: string }[]): boolean {
   return new Set(items.map((item) => item.id)).size === items.length
 }
 
+// Проверяет ID, положение на сетке, высоту и пересечения нот одной высоты в паттерне.
 function notesFitTrack(track: Track): boolean {
   const range = pitchRangeFor(track.instrument)
   return track.patterns.every(
@@ -49,6 +53,7 @@ function notesFitTrack(track: Track): boolean {
   )
 }
 
+// Проверяет, что у каждого трека одна дорожка нужной длины со ссылками на свои паттерны.
 function lanesMatchTracks(project: Project): boolean {
   const { barCount, lanes } = project.arrangement
   return (

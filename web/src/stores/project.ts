@@ -9,14 +9,19 @@ import type { Project } from '@/domain/types'
 export const useProjectStore = defineStore('project', {
   state() {
     return {
+      // текущий проект, заменяем целиком при изменениях
       project: shallowRef<Project>(createProject()),
+      // прошлые снимки, история для отмены
       past: shallowRef<readonly Project[]>([]),
     }
   },
+
   getters: {
     canUndo: (state) => state.past.length > 0,
   },
+
   actions: {
+    // применяет правки к проекту. принимает функцию, которая получает проект и возвращает проект
     change(update: (current: Project) => Project): boolean {
       const next = update(this.project)
       if (next === this.project) {
@@ -26,6 +31,8 @@ export const useProjectStore = defineStore('project', {
       this.project = next
       return true
     },
+
+    // контрл зет
     undo(): void {
       const previous = this.past[this.past.length - 1]
       if (!previous) {
@@ -34,28 +41,36 @@ export const useProjectStore = defineStore('project', {
       this.past = this.past.slice(0, -1)
       this.project = previous
     },
+
     load(next: Project): void {
       this.project = next
       this.past = []
     },
+
     setBpm(bpm: number): boolean {
       return this.change((current) => projects.setBpm(current, bpm))
     },
+
     setSwing(swing: number): boolean {
       return this.change((current) => projects.setSwing(current, swing))
     },
+
     setTrackMuted(trackId: string, muted: boolean): boolean {
       return this.change((current) => projects.setTrackMuted(current, trackId, muted))
     },
+
     setTrackMixLevel(trackId: string, control: projects.TrackMixControl, level: number): boolean {
       return this.change((current) => projects.setTrackMixLevel(current, trackId, control, level))
     },
+
     rename(title: string): boolean {
       return this.change((current) => projects.renameProject(current, title))
     },
+
     appendArrangementBar(): void {
       this.change(projects.appendArrangementBar)
     },
+
     setArrangementPattern(trackId: string, bar: number, patternId: string | null): boolean {
       return this.change((current) =>
         projects.setArrangementPattern(current, trackId, bar, patternId),
