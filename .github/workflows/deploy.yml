@@ -1,0 +1,60 @@
+name: Deploy Loopa
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: loopa-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.repository == 'xdariko/loopa' && github.ref == 'refs/heads/main' && github.actor == 'xdariko' && github.triggering_actor == 'xdariko'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: mise.toml
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+      - name: Package release
+        run: |
+          mkdir release
+          git archive HEAD api | tar -xf - -C release
+          mkdir release/web
+          cp -a web/dist release/web/
+          tar -czf "$RUNNER_TEMP/loopa.tar.gz" -C release api web
+      - name: Deploy over SSH
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          : "${DEPLOY_HOST:?Set DEPLOY_HOST in the production environment}"
+          : "${DEPLOY_URL:?Set DEPLOY_URL in the production environment}"
+          : "${DEPLOY_SSH_KEY:?Set DEPLOY_SSH_KEY in the production environment}"
+          : "${DEPLOY_KNOWN_HOSTS:?Set DEPLOY_KNOWN_HOSTS in the production environment}"
+          umask 077
+          ssh_dir="$(mktemp -d)"
+          trap 'rm -f "$ssh_dir/key" "$ssh_dir/known_hosts"; rmdir "$ssh_dir"' EXIT
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          ssh -T -i "$ssh_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$ssh_dir/known_hosts" \
+            -o ConnectTimeout=15 -l loopa -- "$DEPLOY_HOST" loopa-deploy \
+            < "$RUNNER_TEMP/loopa.tar.gz"
+          curl -fsS --max-time 15 "${DEPLOY_URL%/}/up"
