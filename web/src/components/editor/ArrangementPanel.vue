@@ -2,6 +2,7 @@
   <section class="arrangement" :class="{ 'arrangement--expanded': expanded }" :aria-label="$t('arrangement.title')">
     <div class="arrangement__header">
       <h2 class="arrangement__heading">{{ $t('arrangement.title') }}</h2>
+      <slot name="actions" />
       <button
         v-if="rows.length"
         type="button"

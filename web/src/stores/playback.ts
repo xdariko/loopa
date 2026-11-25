@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { markRaw, onScopeDispose, shallowRef, watch } from 'vue'
 
+import { patternInBar, toNoteEvent } from '@/audio/arrangement'
 import { getAudioEngine } from '@/audio/engine'
-import { createScheduler, stepDuration, type ScheduledStep } from '@/audio/scheduler'
+import { createScheduler, DELAY_STEPS, stepDuration, type ScheduledStep } from '@/audio/scheduler'
 import type { SpectrumSource } from '@/audio/spectrum'
 import { playbackNoteKey, PlaybackTimeline, type TimelineSnapshot } from '@/audio/timeline'
 import { STEPS_PER_BAR } from '@/domain/constants'
@@ -14,7 +15,6 @@ import { useProjectStore } from './project'
 
 // скрипт для управления воспроизведением проекта и паттернов, синхронизации с аудио движком и отслеживания состояния воспроизведения
 
-const DELAY_STEPS = 3
 export type PlaybackMode = 'composition' | 'pattern'
 
 export const usePlaybackStore = defineStore('playback', {
@@ -106,8 +106,7 @@ export const usePlaybackStore = defineStore('playback', {
         const step = { ...scheduled, step: scheduled.step % STEPS_PER_BAR }
         const { tracks, arrangement } = this.activeProject
         for (const track of tracks) {
-          const patternId = arrangement.lanes[track.id]?.[bar]
-          const pattern = track.patterns.find((pattern) => pattern.id === patternId)
+          const pattern = patternInBar(track, arrangement, bar)
           if (pattern) {
             playingPatterns.set(track.id, pattern.id)
             if (!track.muted && track.volume > 0) {
@@ -121,19 +120,15 @@ export const usePlaybackStore = defineStore('playback', {
 
     // запускает ноты, которые начинаются на этом шаге, и записывает время их звучания
     playPatternStep(trackId: string, pattern: Pattern, scheduled: ScheduledStep, stepsRemaining = pattern.steps - scheduled.step): void {
-      const { step, time, stepDuration: duration } = scheduled
+      const { step, time } = scheduled
       notesStartingAt(pattern, step).forEach((note) => {
-        const noteDuration = Math.min(note.duration, stepsRemaining) * duration
-        const voice = this.engine.playNote(trackId, {
-          pitch: note.pitch,
-          time,
-          duration: noteDuration,
-        })
+        const event = toNoteEvent(note, scheduled, stepsRemaining)
+        const voice = this.engine.playNote(trackId, event)
         if (voice.endTime > time) {
           this.timeline.addNote({
             id: playbackNoteKey(trackId, pattern.id, note.id),
             start: time,
-            end: Math.min(time + noteDuration, voice.endTime),
+            end: Math.min(time + event.duration, voice.endTime),
           })
         }
       })

@@ -9,7 +9,7 @@ import { SPECTRUM_FFT_SIZE } from './spectrum'
 import type { NoteEvent, Voice } from './types'
 import { SILENT_VOICE } from './voice'
 
-const MASTER_LEVEL = 0.8
+export const MASTER_LEVEL = 0.8
 
 interface AudioGraph {
   readonly context: AudioContext
@@ -149,11 +149,15 @@ export class AudioEngine {
             track,
             graph.master,
             graph.effects,
-            (id) => this.samples.get(id)?.buffer,
+            (id) => this.getSampleBuffer(id),
           ),
         )
       }
     })
+  }
+
+  getSampleBuffer(sampleId: string): AudioBuffer | undefined {
+    return this.samples.get(sampleId)?.buffer
   }
 
   private forgetFinishedVoices(): void {

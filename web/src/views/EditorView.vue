@@ -69,7 +69,33 @@
         @open="openArrangementPattern"
         @assign="projectStore.setArrangementPattern"
         @create="createArrangementPattern"
-      />
+      >
+        <template #actions>
+          <div class="editor__export">
+            <button
+              type="button"
+              class="arrangement__toggle"
+              :disabled="exportingAudio || !projectStore.project.tracks.length"
+              @keydown.space.stop
+              @click="exportAudio()"
+            >
+              {{ $t('editor.exportComposition') }}
+            </button>
+            <button
+              type="button"
+              class="arrangement__toggle"
+              :disabled="exportingAudio || !editor.selectedTrack"
+              @keydown.space.stop
+              @click="exportAudio(editor.selectedTrack ?? undefined)"
+            >
+              {{ $t('editor.exportTrack') }}
+            </button>
+            <span v-if="exportingAudio || exportError" role="status">
+              {{ exportError || $t('editor.exportingAudio') }}
+            </span>
+          </div>
+        </template>
+      </ArrangementPanel>
     </section>
   </div>
 </template>
@@ -78,6 +104,7 @@
 import { defineComponent } from 'vue'
 
 import { getAudioEngine } from '@/audio/engine'
+import { renderArrangementWav } from '@/audio/exportWav'
 import { SampleFileError } from '@/audio/sampleFile'
 import { playbackNoteKey } from '@/audio/timeline'
 import TrackPanel from '@/components/editor/TrackPanel.vue'
@@ -89,6 +116,7 @@ import SpectrumView from '@/components/editor/SpectrumView.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import { providePlaybackCursor, usePlaybackCursor } from '@/composables/usePlaybackCursor'
 import { trackColor } from '@/domain/trackColor'
+import type { Track } from '@/domain/types'
 import { useEditorStore } from '@/stores/editor'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectStore } from '@/stores/project'
@@ -122,7 +150,9 @@ export default defineComponent({
     return {
       importingSample: false,
       sampleError: '',
-      sampleImport: new AbortController(),
+      lifetime: new AbortController(),
+      exportingAudio: false,
+      exportError: '',
       arrangementCell: null as { trackId: string; bar: number } | null,
     }
   },
@@ -189,11 +219,44 @@ export default defineComponent({
   },
 
   beforeUnmount() {
-    this.sampleImport.abort()
+    this.lifetime.abort()
     this.playback.pause()
   },
 
   methods: {
+    async exportAudio(track?: Track): Promise<void> {
+      if (this.exportingAudio) {
+        return
+      }
+      this.exportingAudio = true
+      this.exportError = ''
+      try {
+        const project = this.projectStore.project
+        const title = track ? `${project.title} — ${track.name}` : project.title
+        const blob = await renderArrangementWav(project, track?.id)
+        if (this.lifetime.signal.aborted) {
+          return
+        }
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `${title.replace(/[<>:"/\\|?*]/g, '_').trim() || 'Loopa'}.wav`
+        document.body.append(link)
+        try {
+          link.click()
+        } finally {
+          link.remove()
+          window.setTimeout(() => URL.revokeObjectURL(url), 30_000)
+        }
+      } catch {
+        if (!this.lifetime.signal.aborted) {
+          this.exportError = this.$t('editor.exportFailed')
+        }
+      } finally {
+        this.exportingAudio = false
+      }
+    },
+
     async importSample(file: File): Promise<void> {
       if (this.importingSample) {
         return
@@ -201,11 +264,11 @@ export default defineComponent({
       this.importingSample = true
       this.sampleError = ''
       try {
-        const sampleId = await getAudioEngine().importSample(file, this.sampleImport.signal)
+        const sampleId = await getAudioEngine().importSample(file, this.lifetime.signal)
         const name = file.name.replace(/\.[^.]+$/, '').trim() || this.$t('editor.unnamedSample')
         this.editor.addTrack({ kind: 'sample', sampleId }, name)
       } catch (error) {
-        if (!this.sampleImport.signal.aborted) {
+        if (!this.lifetime.signal.aborted) {
           this.sampleError =
             error instanceof SampleFileError ? error.message : this.$t('samples.loadFailed')
         }

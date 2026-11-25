@@ -3,11 +3,7 @@ import type { Voice } from './types'
 
 export const SILENT_VOICE: Voice = { endTime: 0, stop: () => {} }
 
-export function createVoice(
-  sources: readonly AudioScheduledSourceNode[],
-  amplifier: GainNode,
-  endTime: number,
-): Voice {
+export function createVoice(sources: readonly AudioScheduledSourceNode[], amplifier: GainNode, endTime: number): Voice {
   sources.forEach((source) => source.stop(endTime))
   return {
     endTime,

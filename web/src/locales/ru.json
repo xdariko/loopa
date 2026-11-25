@@ -74,7 +74,11 @@
   "editor": {
     "emptyGrid": "Добавьте дорожку, чтобы расставлять ноты",
     "unnamedSample": "Сэмпл",
-    "noteLabel": "{pitch}, шаг {step}"
+    "noteLabel": "{pitch}, шаг {step}",
+    "exportComposition": "Скачать композицию (WAV)",
+    "exportTrack": "Скачать дорожку (WAV)",
+    "exportingAudio": "Готовим WAV…",
+    "exportFailed": "Не удалось экспортировать звук."
   },
   "samples": {
     "loadFailed": "Не удалось загрузить звук.",

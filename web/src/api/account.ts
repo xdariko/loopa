@@ -14,11 +14,7 @@ export async function getAccount(signal: AbortSignal): Promise<Account> {
   return response.json() as Promise<Account>
 }
 
-export async function authenticate(
-  email: string,
-  password: string,
-  passwordConfirmation?: string,
-): Promise<Account> {
+export async function authenticate(email: string, password: string, passwordConfirmation?: string): Promise<Account> {
   const registering = passwordConfirmation !== undefined
   const response = await apiFetch(registering ? '/api/registration' : '/api/session', {
     method: 'POST',

@@ -49,3 +49,18 @@
 .editor__arrangement.arrangement--expanded {
   flex-basis: 68%;
 }
+
+.editor__export {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+}
+
+.editor__export button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

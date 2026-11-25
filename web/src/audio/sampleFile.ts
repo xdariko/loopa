@@ -1,5 +1,7 @@
 import { t } from '@/i18n'
 
+// для проверки загружаемого файла с компа
+
 export const SAMPLE_FILE_ACCEPT = '.wav,.mp3,audio/wav,audio/mpeg'
 const MAX_SAMPLE_BYTES = 5 * 1024 * 1024
 const WAV_HEADER_LENGTH = 12
