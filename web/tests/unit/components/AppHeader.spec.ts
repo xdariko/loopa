@@ -1,6 +1,6 @@
-import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { expect, it, vi } from 'vitest'
+import { createApp, nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { getAccount } from '@/api/account'
@@ -33,16 +33,19 @@ it('prompts guests to sign in without sending a save request', async () => {
     ],
   })
   await router.push('/editor')
-  const header = mount(AppHeader, { global: { plugins: [pinia, router, i18n] } })
+  const root = document.createElement('div')
+  const app = createApp(AppHeader).use(pinia).use(router).use(i18n)
+  app.mount(root)
   try {
-    await flushPromises()
-    await header.get('.header__actions button').trigger('click')
+    const saveButton = root.querySelector<HTMLButtonElement>('.header__actions button')!
+    saveButton.click()
+    await nextTick()
 
     expect(save).not.toHaveBeenCalled()
-    const link = header.get('.header__feedback a')
-    expect(link.attributes('href')).toBe('/account')
-    expect(link.text()).toBe('Войти или зарегистрироваться')
+    const link = root.querySelector('.header__feedback a')
+    expect(link?.getAttribute('href')).toBe('/account')
+    expect(link?.textContent).toBe('Войти или зарегистрироваться')
   } finally {
-    header.unmount()
+    app.unmount()
   }
 })
