@@ -4,7 +4,12 @@ RSpec.describe "Projects API", type: :request do
   let!(:owner) { register_project_owner }
 
   it "creates a project and returns its saved document" do
-    document = { version: 1, title: "Loop", tracks: [{ id: "lead", sampleId: nil }] }
+    document = {
+      version: 1,
+      title: "Loop",
+      tracks: [{ id: "lead", sampleId: nil }],
+      arrangement: { barCount: 5, lanes: { lead: [nil, "a", nil, "b", nil] } }
+    }
     post "/api/projects",
       params: { project: { title: "Loop", data: document, user_id: 123, share_token: "chosen" } },
       headers: RequestHelpers::BROWSER_WRITE_HEADERS, as: :json
@@ -19,6 +24,10 @@ RSpec.describe "Projects API", type: :request do
     get "/api/projects/#{created["id"]}"
     expect(response).to have_http_status(:success)
     expect(response.parsed_body).to eq(created)
+
+    get "/api/shared/#{created.fetch("share_token")}"
+    expect(response).to have_http_status(:success)
+    expect(response.parsed_body["data"]).to eq(document.deep_stringify_keys)
   end
 
   it "lists project summaries in most recently updated order" do
@@ -35,13 +44,14 @@ RSpec.describe "Projects API", type: :request do
   it "updates a project without changing its token" do
     project = owner.projects.create!(title: "Old", data: { version: 1, bpm: 120 })
     token = project.share_token
+    document = { version: 1, bpm: 130, arrangement: { barCount: 3, lanes: { lead: [nil, "a", nil] } } }
 
     patch "/api/projects/#{project.id}",
-      params: { project: { title: "New", data: { version: 1, bpm: 130 } } },
+      params: { project: { title: "New", data: document } },
       headers: RequestHelpers::BROWSER_WRITE_HEADERS, as: :json
     expect(response).to have_http_status(:success)
     expect(response.parsed_body["share_token"]).to eq(token)
-    expect(response.parsed_body.dig("data", "bpm")).to eq(130)
+    expect(response.parsed_body["data"]).to eq(document.deep_stringify_keys)
   end
 
   it "rejects an unsupported document version" do

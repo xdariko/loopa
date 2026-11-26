@@ -46,6 +46,16 @@ module Api
 
       permitted = project.permit(:title, data: {}).to_h
       permitted[:data] = nil if project.key?(:data) && !permitted.key?(:data)
+
+      if project.key?(:data) && request.content_mime_type == Mime[:json] && request.raw_post.present?
+        # Rails removes null array entries from params, but they represent empty bars.
+        body = ActiveSupport::JSON.decode(request.raw_post)
+        body_project = body["project"] if body.is_a?(Hash)
+        if body_project.is_a?(Hash) && body_project.key?("data")
+          document = body_project["data"]
+          permitted[:data] = document.is_a?(Hash) ? document : nil
+        end
+      end
       permitted
     end
   end
