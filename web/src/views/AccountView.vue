@@ -16,6 +16,9 @@
           <button type="button" class="page__button" :disabled="disabled" @click="logout">
             {{ $t('account.signOut') }}
           </button>
+          <button type="button" class="page__button page__button--danger" :disabled="disabled" @click="removeAccount">
+            {{ $t('account.delete') }}
+          </button>
         </div>
       </template>
       <form v-else class="page__form" @submit.prevent="submit">
@@ -62,7 +65,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { authenticate, getAccount, signOut } from '@/api/account'
+import { authenticate, deleteAccount, getAccount, signOut } from '@/api/account'
 import { useAccountStore } from '@/stores/account'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
@@ -168,10 +171,21 @@ export default defineComponent({
       ) {
         return
       }
+      await this.endAccountSession(signOut)
+    },
+
+    async removeAccount(): Promise<void> {
+      if (this.disabled || !window.confirm(this.$t('account.confirmDelete'))) {
+        return
+      }
+      await this.endAccountSession(deleteAccount)
+    },
+
+    async endAccountSession(action: () => Promise<void>): Promise<void> {
       this.busy = true
       this.error = ''
       try {
-        await signOut()
+        await action()
         this.playback.reset()
         this.persistence.startNew()
         this.account.email = null

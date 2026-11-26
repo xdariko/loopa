@@ -28,6 +28,10 @@ module Authentication
 
   def terminate_session
     resume_session&.destroy!
+    clear_session
+  end
+
+  def clear_session
     Current.session = nil
     cookies.delete(SESSION_COOKIE)
   end

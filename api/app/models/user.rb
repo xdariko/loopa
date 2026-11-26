@@ -1,7 +1,7 @@
 class User < ApplicationRecord
   has_secure_password
   has_many :sessions, dependent: :destroy
-  has_many :projects, inverse_of: :user
+  has_many :projects, inverse_of: :user, dependent: :destroy
 
   normalizes :email, with: ->(email) { email.strip.downcase }
   validates :email, presence: true, uniqueness: true, length: { maximum: 254 },

@@ -18,14 +18,19 @@
             $d(new Date(project.updated_at), 'projectDate')
           }}</time>
         </div>
-        <button
-          type="button"
-          class="page__button"
-          :disabled="opening !== null || persistence.isSaving"
-          @click="open(project.id)"
-        >
-          {{ opening === project.id ? $t('projects.opening') : $t('common.open') }}
-        </button>
+        <div class="page__actions">
+          <button
+            type="button"
+            class="page__button"
+            :disabled="busy"
+            @click="open(project.id)"
+          >
+            {{ opening === project.id ? $t('projects.opening') : $t('common.open') }}
+          </button>
+          <button type="button" class="page__button page__button--danger" :disabled="busy" @click="remove(project)">
+            {{ $t('projects.delete') }}
+          </button>
+        </div>
       </li>
     </ul>
   </section>
@@ -34,7 +39,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { AccountRequiredError, getProject, listProjects, type ProjectSummary } from '@/api/projects'
+import { AccountRequiredError, deleteProject, getProject, listProjects, type ProjectSummary } from '@/api/projects'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
@@ -47,10 +52,17 @@ export default defineComponent({
       projects: [] as ProjectSummary[],
       loading: false,
       opening: null as number | null,
+      deleting: false,
       loadFailed: false,
       accountRequired: false,
       error: '',
     }
+  },
+
+  computed: {
+    busy() {
+      return this.loading || this.opening !== null || this.deleting || this.persistence.isSaving
+    },
   },
 
   mounted() {
@@ -59,6 +71,10 @@ export default defineComponent({
 
   beforeUnmount() {
     this.controller.abort()
+  },
+
+  beforeRouteLeave() {
+    return !this.deleting
   },
 
   methods: {
@@ -105,6 +121,29 @@ export default defineComponent({
         }
       } finally {
         this.opening = null
+      }
+    },
+
+    async remove(project: ProjectSummary): Promise<void> {
+      if (this.busy || !window.confirm(this.$t('projects.confirmDelete', { title: project.title }))) {
+        return
+      }
+      this.deleting = true
+      this.error = ''
+      try {
+        await deleteProject(project.id)
+        this.projects = this.projects.filter(({ id }) => id !== project.id)
+        if (this.persistence.saved?.id === project.id) {
+          this.persistence.detachSavedProject()
+        }
+      } catch (reason) {
+        if (reason instanceof AccountRequiredError) {
+          this.projects = []
+          this.accountRequired = true
+        }
+        this.error = reason instanceof Error ? reason.message : this.$t('projects.deleteFailed')
+      } finally {
+        this.deleting = false
       }
     },
   },

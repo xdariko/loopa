@@ -122,10 +122,26 @@
 }
 
 .arrangement__tick {
+  position: relative;
   width: var(--arrangement-bar-width);
   text-align: center;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.arrangement__remove-bar {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  min-width: 24px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+}
+
+.arrangement__remove-bar:hover,
+.arrangement__remove-bar:focus-visible {
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .arrangement__cell {

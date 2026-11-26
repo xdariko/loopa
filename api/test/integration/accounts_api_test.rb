@@ -76,6 +76,34 @@ class AccountsApiTest < ActionDispatch::IntegrationTest
       Project.find(response.parsed_body["id"]).user_id
   end
 
+  test "deletes the current account, its sessions and its projects" do
+    other = User.create!(email: "other@example.com", password: PASSWORD)
+    other_project = other.projects.create!(title: "Other", data: { version: 1 })
+    guest = open_session
+    guest.delete "/api/account", headers: HEADERS
+    assert_equal 401, guest.response.status
+
+    register("delete@example.com")
+    user = User.find_by!(email: "delete@example.com")
+    project = user.projects.create!(title: "Loop", data: { version: 1 })
+    user.sessions.create!
+
+    delete "/api/account", headers: { "Origin" => "https://another.example.com" }
+    assert_response :forbidden
+
+    delete "/api/account", headers: HEADERS
+    assert_response :no_content
+    assert_not User.exists?(user.id)
+    assert_not Session.exists?(user_id: user.id)
+    assert_not Project.exists?(project.id)
+    assert Project.exists?(other_project.id)
+
+    get "/api/session"
+    assert_nil response.parsed_body["email"]
+    get "/api/shared/#{project.share_token}"
+    assert_response :not_found
+  end
+
   private
 
   def register(email)

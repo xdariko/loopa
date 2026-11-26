@@ -24,12 +24,23 @@
       @scroll="closePicker()"
     >
       <div class="arrangement__map">
-        <div class="arrangement__ruler arrangement__row" aria-hidden="true">
+        <div class="arrangement__ruler arrangement__row">
           <span class="arrangement__track"></span>
           <div class="arrangement__bars">
-            <span v-for="bar in arrangement.barCount" :key="bar" class="arrangement__tick">{{
-              bar
-            }}</span>
+            <span v-for="bar in arrangement.barCount" :key="bar" class="arrangement__tick">
+              {{ bar }}
+              <button
+                v-if="arrangement.barCount > 1"
+                type="button"
+                class="arrangement__remove-bar"
+                :aria-label="$t('arrangement.removeBar', { bar })"
+                :title="$t('arrangement.removeBar', { bar })"
+                @keydown.space.stop
+                @click="removeBar(bar - 1)"
+              >
+                ×
+              </button>
+            </span>
           </div>
         </div>
 
@@ -187,6 +198,7 @@ export default defineComponent({
 
   emits: {
     appendBar: () => true,
+    removeBar: (...args: [bar: number]) => args.length === 1,
     open: (...args: [trackId: string, patternId: string | null, bar: number]) => args.length === 3,
     assign: (...args: [trackId: string, bar: number, patternId: string | null]) =>
       args.length === 3,
@@ -317,6 +329,17 @@ export default defineComponent({
       if (this.viewport) {
         this.viewport.scrollLeft = this.viewport.scrollWidth
       }
+    },
+
+    removeBar(bar: number): void {
+      this.closePicker()
+      if (this.activeCell && this.activeCell.bar >= bar) {
+        this.activeCell = this.activeCell.bar === bar
+          ? null
+          : { ...this.activeCell, bar: this.activeCell.bar - 1 }
+      }
+      this.$emit('removeBar', bar)
+      this.viewport?.focus({ preventScroll: true })
     },
 
     isPickerFor(trackId: string, bar: number): boolean {

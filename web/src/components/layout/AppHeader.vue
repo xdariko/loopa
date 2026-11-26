@@ -144,6 +144,11 @@ export default defineComponent({
       this.status = ''
       this.accountRequired = false
       this.shareLink = ''
+      if (!this.account.email) {
+        this.accountRequired = true
+        this.status = this.$t('projects.accountRequired')
+        return
+      }
       try {
         await this.persistence.save()
         this.status = this.persistence.isDirty

@@ -71,6 +71,10 @@ export const useProjectStore = defineStore('project', {
       this.change(projects.appendArrangementBar)
     },
 
+    removeArrangementBar(bar: number): boolean {
+      return this.change((current) => projects.removeArrangementBar(current, bar))
+    },
+
     setArrangementPattern(trackId: string, bar: number, patternId: string | null): boolean {
       return this.change((current) =>
         projects.setArrangementPattern(current, trackId, bar, patternId),

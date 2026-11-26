@@ -34,6 +34,7 @@
         @select-pattern="editor.selectPattern"
         @create-pattern="editor.createSelectedTrackPattern"
         @duplicate-pattern="editor.duplicateSelectedPattern"
+        @remove-pattern="editor.removeSelectedPattern"
       >
         <SpectrumView :playing="playback.isPlaying" :source="playback.spectrum" />
       </TransportBar>
@@ -66,6 +67,7 @@
         :arrangement="projectStore.project.arrangement"
         :selected-track-id="editor.selectedTrack?.id ?? null"
         @append-bar="projectStore.appendArrangementBar"
+        @remove-bar="projectStore.removeArrangementBar"
         @open="openArrangementPattern"
         @assign="projectStore.setArrangementPattern"
         @create="createArrangementPattern"

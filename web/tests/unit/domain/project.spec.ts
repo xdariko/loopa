@@ -12,6 +12,8 @@ import {
   addPattern,
   addTrack,
   nextTrackName,
+  removeArrangementBar,
+  removePattern,
   removeTrack,
   renameProject,
   renameTrack,
@@ -79,6 +81,36 @@ describe('addPattern', () => {
     expect(updated.tracks[1]).toBe(project.tracks[1])
     expect(updated.arrangement).toBe(project.arrangement)
     expect(addPattern(project, 'missing', pattern)).toBe(project)
+  })
+})
+
+describe('arrangement deletion', () => {
+  it('clears all slots for a deleted pattern on its own track', () => {
+    const project = createProject()
+    const track = firstTrack(project)
+    const added = createPattern()
+    const withPattern = addPattern(project, track.id, added)
+    const assigned = setArrangementPattern(withPattern, track.id, 1, added.id)
+    const updated = removePattern(assigned, track.id, track.patterns[0]!.id)
+
+    expect(firstTrack(updated).patterns).toEqual([added])
+    expect(updated.arrangement.lanes[track.id]).toEqual([null, added.id, null, null])
+    const otherTrack = project.tracks[1]!
+    expect(updated.arrangement.lanes[otherTrack.id]).toBe(project.arrangement.lanes[otherTrack.id])
+  })
+
+  it('removes the same bar from every lane and preserves the final bar', () => {
+    const project = createProject()
+    const track = firstTrack(project)
+    const cleared = setArrangementPattern(project, track.id, 2, null)
+    const updated = removeArrangementBar(cleared, 1)
+
+    expect(updated.arrangement.barCount).toBe(3)
+    expect(updated.arrangement.lanes[track.id]?.[1]).toBeNull()
+    expect(Object.values(updated.arrangement.lanes).map((lane) => lane.length)).toEqual([3, 3, 3])
+    expect(updated.tracks).toBe(cleared.tracks)
+    const finalBar = removeArrangementBar(removeArrangementBar(updated, 0), 0)
+    expect(removeArrangementBar(finalBar, 0)).toBe(finalBar)
   })
 })
 

@@ -114,6 +114,22 @@ export const useEditorStore = defineStore('editor', {
       return pattern ? this.addPattern(duplicatePattern(pattern)) : false
     },
 
+    removeSelectedPattern(): boolean {
+      const track = this.selectedTrack
+      const pattern = this.selectedPattern
+      if (!track || !pattern) {
+        return false
+      }
+      const removed = useProjectStore().change((project) =>
+        projects.removePattern(project, track.id, pattern.id),
+      )
+      if (removed) {
+        this.selectedPatternId = null
+        this.clearSelection()
+      }
+      return removed
+    },
+
     selectNote(noteId: string): void {
       this.selectedNoteIds = [noteId]
     },

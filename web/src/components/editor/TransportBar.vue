@@ -69,6 +69,15 @@
       >
         {{ $t('transport.duplicate') }}
       </button>
+      <button
+        type="button"
+        class="transport__action"
+        :disabled="!selectedPatternId"
+        @keydown.space.stop
+        @click="$emit('removePattern')"
+      >
+        {{ $t('transport.removePattern') }}
+      </button>
     </div>
 
     <div class="transport__display">
@@ -100,6 +109,7 @@ export default defineComponent({
     selectPattern: (...args: [patternId: string]) => args.length === 1,
     createPattern: () => true,
     duplicatePattern: () => true,
+    removePattern: () => true,
   },
 
   data() {

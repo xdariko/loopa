@@ -71,6 +71,47 @@ export function appendArrangementBar(project: Project): Project {
   }
 }
 
+export function removePattern(project: Project, trackId: string, patternId: string): Project {
+  const { lanes } = project.arrangement
+  const lane = lanes[trackId]
+  if (!lane) {
+    return project
+  }
+  const next = updateTrack(project, trackId, (track) => {
+    const patterns = track.patterns.filter((pattern) => pattern.id !== patternId)
+    return patterns.length === track.patterns.length ? track : { ...track, patterns }
+  })
+  if (next === project) {
+    return project
+  }
+  return {
+    ...next,
+    arrangement: {
+      ...next.arrangement,
+      lanes: { ...lanes, [trackId]: lane.map((id) => (id === patternId ? null : id)) },
+    },
+  }
+}
+
+export function removeArrangementBar(project: Project, bar: number): Project {
+  const { barCount, lanes } = project.arrangement
+  if (barCount <= 1 || !Number.isInteger(bar) || bar < 0 || bar >= barCount) {
+    return project
+  }
+  return {
+    ...project,
+    arrangement: {
+      barCount: barCount - 1,
+      lanes: Object.fromEntries(
+        Object.entries(lanes).map(([trackId, lane]) => [
+          trackId,
+          lane.filter((_, index) => index !== bar),
+        ]),
+      ),
+    },
+  }
+}
+
 export function setArrangementPattern(project: Project, trackId: string, bar: number, patternId: string | null): Project {
   const track = findTrack(project, trackId)
   const lane = project.arrangement.lanes[trackId]

@@ -73,6 +73,10 @@ export function getProject(id: number, signal: AbortSignal): Promise<SavedProjec
   return json(`/api/projects/${id}`, { signal })
 }
 
+export async function deleteProject(id: number): Promise<void> {
+  await request(`/api/projects/${id}`, { method: 'DELETE' })
+}
+
 export function saveProject(data: ProjectDocument, id?: number): Promise<SavedProject> {
   return json(id === undefined ? '/api/projects' : `/api/projects/${id}`, {
     method: id === undefined ? 'POST' : 'PATCH',
