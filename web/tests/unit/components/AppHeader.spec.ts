@@ -4,13 +4,19 @@ import { expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { getAccount } from '@/api/account'
+import type { getAudioEngine } from '@/audio/engine'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import { i18n } from '@/i18n'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
-vi.mock('@/api/account', () => ({ getAccount: vi.fn() }))
+type AudioEngine = ReturnType<typeof getAudioEngine>
+
+vi.mock('@/api/account', () => ({ getAccount: vi.fn<typeof getAccount>() }))
 vi.mock('@/audio/engine', () => ({
-  getAudioEngine: () => ({ syncTracks: vi.fn(), setDelayTime: vi.fn() }),
+  getAudioEngine: () => ({
+    syncTracks: vi.fn<AudioEngine['syncTracks']>(),
+    setDelayTime: vi.fn<AudioEngine['setDelayTime']>(),
+  }),
 }))
 
 it('prompts guests to sign in without sending a save request', async () => {

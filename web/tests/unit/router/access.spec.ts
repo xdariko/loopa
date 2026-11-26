@@ -8,7 +8,7 @@ import { useAccountStore } from '@/stores/account'
 
 vi.mock('@/api/account', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/api/account')>()),
-  getAccount: vi.fn(),
+  getAccount: vi.fn<typeof getAccount>(),
 }))
 
 it('checks the session for projects and keeps the editor accessible to guests', async () => {
