@@ -175,13 +175,11 @@ export default defineComponent({
       const { tracks, arrangement } = this.projectStore.project
       const lane = arrangement.lanes[selectedTrack.id]
       const cell = this.arrangementCell
-      const bar =
-        cell?.trackId === selectedTrack.id && lane?.[cell.bar] === selectedPattern.id
-          ? cell.bar
-          : (lane?.indexOf(selectedPattern.id) ?? -1)
+      const bar = cell?.trackId === selectedTrack.id && lane?.[cell.bar] === selectedPattern.id ? cell.bar : (lane?.indexOf(selectedPattern.id) ?? -1)
       if (bar < 0) {
         return []
       }
+
       return tracks.flatMap((track, index) => {
         if (track.id === selectedTrack.id) {
           return []
@@ -207,11 +205,7 @@ export default defineComponent({
       const ids = new Set<string>()
       if (this.isSelectedPatternPlaying && selectedTrack && selectedPattern) {
         for (const note of selectedPattern.notes) {
-          if (
-            this.cursor.playingNoteIds.value.has(
-              playbackNoteKey(selectedTrack.id, selectedPattern.id, note.id),
-            )
-          ) {
+          if (this.cursor.playingNoteIds.value.has(playbackNoteKey(selectedTrack.id, selectedPattern.id, note.id))) {
             ids.add(note.id)
           }
         }

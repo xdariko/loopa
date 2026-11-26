@@ -7,6 +7,7 @@
       <button v-else-if="loadFailed" type="button" class="page__button" @click="load">
         {{ $t('common.retry') }}
       </button>
+
       <template v-else-if="email">
         <p>{{ email }}</p>
         <div class="page__actions">
@@ -21,6 +22,7 @@
           </button>
         </div>
       </template>
+
       <form v-else class="page__form" @submit.prevent="submit">
         <label>
           {{ $t('account.email') }}
@@ -29,8 +31,7 @@
             type="email"
             autocomplete="email"
             maxlength="254"
-            required
-          />
+            required />
         </label>
 
         <label>
@@ -40,13 +41,16 @@
             type="password"
             :autocomplete="registering ? 'new-password' : 'current-password'"
             :minlength="registering ? 8 : undefined"
-            required
-          />
+            required />
         </label>
 
         <label v-if="registering">
           {{ $t('account.repeatPassword') }}
-          <input v-model="confirmation" type="password" autocomplete="new-password" required />
+          <input 
+            v-model="confirmation" 
+            type="password" 
+            autocomplete="new-password" 
+            required />
         </label>
 
         <div class="page__actions">
@@ -165,10 +169,7 @@ export default defineComponent({
     },
 
     async logout(): Promise<void> {
-      if (
-        this.disabled ||
-        (this.persistence.isDirty && !window.confirm(this.$t('account.confirmSignOut')))
-      ) {
+      if (this.disabled || (this.persistence.isDirty && !window.confirm(this.$t('account.confirmSignOut')))) {
         return
       }
       await this.endAccountSession(signOut)

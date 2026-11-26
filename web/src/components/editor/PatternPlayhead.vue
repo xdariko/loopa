@@ -22,9 +22,7 @@ export default defineComponent({
   computed: {
     playheadStyle() {
       const position = this.playbackCursor.position.value
-      return position !== null && position <= this.steps
-        ? { '--playhead-progress': position / this.steps }
-        : null
+      return position !== null && position <= this.steps ? { '--playhead-progress': position / this.steps } : null
     },
   },
 })

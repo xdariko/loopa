@@ -27,22 +27,14 @@ export interface NoteDragOptions {
 }
 
 type DragMode = 'move' | 'resize'
-
-type DragChange =
-  | { readonly mode: 'move'; readonly offset: NoteOffset }
-  | { readonly mode: 'resize'; readonly durationChange: number }
+type DragChange = { readonly mode: 'move'; readonly offset: NoteOffset } | { readonly mode: 'resize'; readonly durationChange: number }
 
 function cellShift(pixels: number, cellSize: number, min: number, max: number): number {
   const shift = clamp(Math.round(pixels / cellSize), min, max)
   return shift === 0 ? 0 : shift
 }
 
-function moveOffset(
-  notes: readonly Note[],
-  delta: PointerDelta,
-  size: GridCellSize,
-  bounds: NoteDragBounds,
-): NoteOffset {
+function moveOffset(notes: readonly Note[], delta: PointerDelta, size: GridCellSize, bounds: NoteDragBounds): NoteOffset {
   const pitches = notes.map((note) => note.pitch)
   return {
     steps: cellShift(
@@ -51,6 +43,7 @@ function moveOffset(
       -Math.min(...notes.map((note) => note.step)),
       bounds.steps - Math.max(...notes.map(noteEnd)),
     ),
+
     pitches: cellShift(
       -delta.y,
       size.height,
@@ -60,12 +53,7 @@ function moveOffset(
   }
 }
 
-function durationChange(
-  notes: readonly Note[],
-  delta: PointerDelta,
-  size: GridCellSize,
-  bounds: NoteDragBounds,
-): number {
+function durationChange( notes: readonly Note[], delta: PointerDelta, size: GridCellSize, bounds: NoteDragBounds,): number {
   return cellShift(
     delta.x,
     size.width,
@@ -74,22 +62,15 @@ function durationChange(
   )
 }
 
-function changeFor(
-  notes: readonly Note[],
-  mode: DragMode,
-  delta: PointerDelta,
-  size: GridCellSize,
-  bounds: NoteDragBounds,
-): DragChange {
-  return mode === 'resize'
-    ? { mode, durationChange: durationChange(notes, delta, size, bounds) }
-    : { mode, offset: moveOffset(notes, delta, size, bounds) }
+function changeFor( notes: readonly Note[], mode: DragMode, delta: PointerDelta, size: GridCellSize, bounds: NoteDragBounds,): DragChange {
+  return mode === 'resize' ? { mode, durationChange: durationChange(notes, delta, size, bounds) } : { mode, offset: moveOffset(notes, delta, size, bounds) }
 }
 
 function applyChange(notes: readonly Note[], change: DragChange): readonly Note[] {
   if (change.mode === 'resize') {
     return notes.map((note) => ({ ...note, duration: note.duration + change.durationChange }))
   }
+
   return notes.map((note) => ({
     ...note,
     step: note.step + change.offset.steps,
@@ -109,6 +90,7 @@ export function useNoteDrag(options: NoteDragOptions) {
       }
       return
     }
+
     if (change.offset.steps !== 0 || change.offset.pitches !== 0) {
       options.onMove(noteIds, change.offset)
     }
@@ -119,20 +101,25 @@ export function useNoteDrag(options: NoteDragOptions) {
     if (!size || notes.length === 0) {
       return false
     }
+
     const change = (delta: PointerDelta) => changeFor(notes, mode, delta, size, options.bounds())
     const started = pointer.start(event, {
       scrollContainer: options.scrollContainer(),
       onMove: (delta) => {
         preview.value = applyChange(notes, change(delta))
       },
+
       onEnd: (delta) => {
         preview.value = null
         commit(notes, change(delta))
       },
+
       onCancel: () => {
         preview.value = null
       },
+
     })
+
     if (started) {
       preview.value = notes
     }

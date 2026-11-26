@@ -5,12 +5,7 @@
     <slot />
 
     <ul class="tracks__list">
-      <li
-        v-for="(track, index) in tracks"
-        :key="track.id"
-        class="tracks__row"
-        :style="trackStyle(index)"
-      >
+      <li v-for="(track, index) in tracks" :key="track.id" class="tracks__row" :style="trackStyle(index)">
         <input
           v-if="renamingTrackId === track.id"
           :ref="focusNameInput"
@@ -22,6 +17,7 @@
           @keydown.esc="cancelRename"
           @blur="finishRename"
         />
+
         <button
           v-else
           type="button"
@@ -36,52 +32,28 @@
           <span class="tracks__dot" />
           <span class="tracks__name">{{ track.name }}</span>
         </button>
-        <button
-          type="button"
-          class="tracks__remove"
-          :aria-label="$t('tracks.remove', { name: track.name })"
-          @click="$emit('remove', track.id)"
-        >
+
+        <button type="button" class="tracks__remove" :aria-label="$t('tracks.remove', { name: track.name })" @click="$emit('remove', track.id)">
           ×
         </button>
+
       </li>
     </ul>
 
     <div class="tracks__footer">
-      <ul
-        v-if="choosingInstrument"
-        class="tracks__instruments"
-        :aria-label="$t('tracks.newInstrument')"
-      >
+      <ul v-if="choosingInstrument" class="tracks__instruments" :aria-label="$t('tracks.newInstrument')">
         <li v-for="option in instrumentOptions" :key="option.label">
           <button type="button" class="tracks__action" @click="add(option.instrument)">
             {{ option.label }}
           </button>
         </li>
       </ul>
-      <button
-        type="button"
-        class="tracks__action"
-        :aria-expanded="choosingInstrument"
-        @click="choosingInstrument = !choosingInstrument"
-      >
+      <button type="button" class="tracks__action" :aria-expanded="choosingInstrument" @click="choosingInstrument = !choosingInstrument">
         {{ choosingInstrument ? $t('tracks.cancel') : $t('tracks.add') }}
       </button>
-      <input
-        ref="sampleInput"
-        type="file"
-        :accept="SAMPLE_FILE_ACCEPT"
-        :disabled="importingSample"
-        hidden
-        @change="chooseSample"
-      />
-      <button
-        type="button"
-        class="tracks__action"
-        :disabled="importingSample"
-        @keydown.space.stop
-        @click="($refs.sampleInput as HTMLInputElement | undefined)?.click()"
-      >
+
+      <input ref="sampleInput" type="file" :accept="SAMPLE_FILE_ACCEPT" :disabled="importingSample" hidden @change="chooseSample"/>
+      <button type="button" class="tracks__action" :disabled="importingSample" @keydown.space.stop @click="($refs.sampleInput as HTMLInputElement | undefined)?.click()">
         {{ importingSample ? $t('tracks.loadingSample') : $t('tracks.loadSample') }}
       </button>
       <p v-if="sampleError" class="tracks__error" role="alert">{{ sampleError }}</p>
@@ -119,10 +91,7 @@ export default defineComponent({
       SAMPLE_FILE_ACCEPT,
       MAX_TRACK_NAME_LENGTH,
       renamingTrackId: null as string | null,
-      instrumentOptions: TRACK_INSTRUMENTS.map((instrument) => ({
-        instrument,
-        label: instrumentLabel(instrument),
-      })),
+      instrumentOptions: TRACK_INSTRUMENTS.map((instrument) => ({ instrument, label: instrumentLabel(instrument)})),
       choosingInstrument: false,
     }
   },

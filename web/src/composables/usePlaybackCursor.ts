@@ -39,10 +39,7 @@ export function usePlaybackCursor(options: PlaybackCursorOptions): PlaybackCurso
     position.value = snapshot.position
     bar.value = snapshot.bar
     const current = patterns.value
-    if (
-      current.size !== snapshot.patterns.size ||
-      [...snapshot.patterns].some(([track, pattern]) => current.get(track) !== pattern)
-    ) {
+    if (current.size !== snapshot.patterns.size || [...snapshot.patterns].some(([track, pattern]) => current.get(track) !== pattern)) {
       patterns.value = snapshot.patterns
     }
     if (!haveSameIds(playingNoteIds.value, snapshot.soundingNoteIds)) {

@@ -1,15 +1,11 @@
 <template>
   <section class="page">
     <h1 class="page__title">{{ $t('projects.title') }}</h1>
+
     <p v-if="loading" class="page__hint" role="status">{{ $t('projects.loading') }}</p>
     <p v-else-if="!error && !projects.length" class="page__hint">{{ $t('projects.empty') }}</p>
     <p v-if="error" class="page__error" role="alert">{{ error }}</p>
-    <RouterLink v-if="accountRequired" to="/account" class="page__button">
-      {{ $t('common.signInOrRegister') }}
-    </RouterLink>
-    <button v-else-if="loadFailed" type="button" class="page__button" @click="refresh">
-      {{ $t('common.retry') }}
-    </button>
+
     <ul v-if="projects.length" class="page__list">
       <li v-for="project in projects" :key="project.id" class="page__row">
         <div class="page__project">
@@ -40,6 +36,7 @@
 import { defineComponent } from 'vue'
 
 import { AccountRequiredError, deleteProject, getProject, listProjects, type ProjectSummary } from '@/api/projects'
+import { useAccountStore } from '@/stores/account'
 import { usePlaybackStore } from '@/stores/playback'
 import { useProjectPersistenceStore } from '@/stores/projectPersistence'
 
@@ -47,14 +44,13 @@ export default defineComponent({
   data() {
     return {
       persistence: useProjectPersistenceStore(),
+      account: useAccountStore(),
       playback: usePlaybackStore(),
       controller: new AbortController(),
       projects: [] as ProjectSummary[],
       loading: false,
       opening: null as number | null,
       deleting: false,
-      loadFailed: false,
-      accountRequired: false,
       error: '',
     }
   },
@@ -80,17 +76,13 @@ export default defineComponent({
   methods: {
     async refresh(): Promise<void> {
       this.loading = true
-      this.loadFailed = false
-      this.accountRequired = false
       this.error = ''
       try {
         this.projects = await listProjects(this.controller.signal)
       } catch (reason) {
         if (!this.controller.signal.aborted) {
           this.projects = []
-          this.accountRequired = reason instanceof AccountRequiredError
-          this.error = reason instanceof Error ? reason.message : this.$t('projects.loadFailed')
-          this.loadFailed = true
+          this.reportError(reason, this.$t('projects.loadFailed'))
         }
       } finally {
         this.loading = false
@@ -113,11 +105,7 @@ export default defineComponent({
         await this.$router.push({ name: 'editor' })
       } catch (reason) {
         if (!this.controller.signal.aborted) {
-          if (reason instanceof AccountRequiredError) {
-            this.projects = []
-            this.accountRequired = true
-          }
-          this.error = reason instanceof Error ? reason.message : this.$t('projects.openFailed')
+          this.reportError(reason, this.$t('projects.openFailed'))
         }
       } finally {
         this.opening = null
@@ -137,14 +125,20 @@ export default defineComponent({
           this.persistence.detachSavedProject()
         }
       } catch (reason) {
-        if (reason instanceof AccountRequiredError) {
-          this.projects = []
-          this.accountRequired = true
-        }
-        this.error = reason instanceof Error ? reason.message : this.$t('projects.deleteFailed')
+        this.reportError(reason, this.$t('projects.deleteFailed'))
       } finally {
         this.deleting = false
       }
+    },
+
+    reportError(reason: unknown, fallback: string): void {
+      if (reason instanceof AccountRequiredError) {
+        this.projects = []
+        this.account.email = null
+        void this.$router.replace({ name: 'account' })
+        return
+      }
+      this.error = reason instanceof Error ? reason.message : fallback
     },
   },
 })

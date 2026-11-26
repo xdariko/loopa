@@ -8,8 +8,7 @@ export interface KeyboardShortcut {
   readonly handler: () => void
 }
 
-const EDITABLE_SELECTOR =
-  'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
+const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])'
 
 function isEditableTarget(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(EDITABLE_SELECTOR) !== null
@@ -41,11 +40,13 @@ export function useKeyboardShortcuts(shortcuts: readonly KeyboardShortcut[]): vo
       consumedCodes.delete(event.code)
       return
     }
+
     event.preventDefault()
     consumedCodes.add(event.code)
     if (event.repeat && !shortcut.repeat) {
       return
     }
+
     shortcut.handler()
   }
 

@@ -4,12 +4,7 @@
     <fieldset v-if="track" :key="track.id" class="track-settings__group">
       <legend class="track-settings__name" :title="track.name">{{ track.name }}</legend>
       <label class="track-settings__mute">
-        <input
-          class="track-settings__checkbox"
-          type="checkbox"
-          :checked="track.muted"
-          @change="changeMuted"
-        />
+        <input class="track-settings__checkbox" type="checkbox" :checked="track.muted" @change="changeMuted"/>
         {{ $t('settings.muted') }}
       </label>
 
@@ -81,11 +76,7 @@ export default defineComponent({
         return []
       }
       const levels = { volume: track.volume, ...track.effects }
-      return mixControlIds.map((id) => ({
-        id,
-        label: this.$t(`settings.${id}`),
-        percent: this.toPercent(levels[id]),
-      }))
+      return mixControlIds.map((id) => ({ id, label: this.$t(`settings.${id}`), percent: this.toPercent(levels[id])}))
     },
 
     swingPercent() {

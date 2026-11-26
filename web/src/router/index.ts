@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { getAccount } from '@/api/account'
+import { useAccountStore } from '@/stores/account'
 import HomeView from '@/views/HomeView.vue'
 
 const router = createRouter({
@@ -18,6 +20,7 @@ const router = createRouter({
     {
       path: '/projects',
       name: 'projects',
+      meta: { requiresAccount: true },
       component: () => import('@/views/ProjectsView.vue'),
     },
     {
@@ -36,6 +39,22 @@ const router = createRouter({
       redirect: '/',
     },
   ],
+})
+
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAccount) {
+    return
+  }
+
+  const account = useAccountStore()
+  try {
+    account.email = (await getAccount()).email
+  } catch {
+    account.email = null
+  }
+  if (!account.email) {
+    return { name: 'account', replace: true }
+  }
 })
 
 export default router

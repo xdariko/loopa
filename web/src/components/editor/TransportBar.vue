@@ -52,14 +52,10 @@
     </label>
 
     <div v-if="patterns" class="transport__actions">
-      <button
-        type="button"
-        class="transport__action"
-        @keydown.space.stop
-        @click="$emit('createPattern')"
-      >
+      <button type="button" class="transport__action" @keydown.space.stop @click="$emit('createPattern')">
         {{ $t('common.new') }}
       </button>
+
       <button
         type="button"
         class="transport__action"
@@ -69,6 +65,7 @@
       >
         {{ $t('transport.duplicate') }}
       </button>
+
       <button
         type="button"
         class="transport__action"

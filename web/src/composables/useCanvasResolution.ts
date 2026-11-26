@@ -1,9 +1,6 @@
 import { onMounted, onScopeDispose, type Ref } from 'vue'
 
-export function useCanvasResolution(
-  canvas: Readonly<Ref<HTMLCanvasElement | null>>,
-  onResize: () => void,
-): void {
+export function useCanvasResolution( canvas: Readonly<Ref<HTMLCanvasElement | null>>, onResize: () => void): void {
   let observer: ResizeObserver | null = null
 
   function fitToDisplay(element: HTMLCanvasElement): void {

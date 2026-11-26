@@ -29,22 +29,13 @@
 
           <div class="home__instrument">
             <div class="home__keys">
-              <span
-                v-for="pitch in pitches"
-                :key="pitch"
-                :class="{ 'home__key--sharp': pitch.includes('#') }"
-              >
+              <span v-for="pitch in pitches" :key="pitch" :class="{ 'home__key--sharp': pitch.includes('#') }">
                 {{ pitch }}
               </span>
             </div>
 
             <div class="home__roll">
-              <span
-                v-for="(style, index) in noteStyles"
-                :key="index"
-                class="home__note"
-                :style="style"
-              />
+              <span v-for="(style, index) in noteStyles" :key="index" class="home__note" :style="style"/>
               <span class="home__playhead" />
             </div>
           </div>

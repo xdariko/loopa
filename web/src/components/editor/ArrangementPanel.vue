@@ -14,6 +14,7 @@
         {{ expanded ? $t('arrangement.collapse') : $t('arrangement.expand') }}
       </button>
     </div>
+
     <p v-if="!rows.length" class="arrangement__empty">{{ $t('arrangement.empty') }}</p>
     <div
       ref="viewport"
@@ -64,13 +65,10 @@
                 <PatternPreview
                   :pattern="pattern"
                   :range="row.range"
-                  :playing-track-id="
-                    bar === playbackBar && playingPatterns.get(row.track.id) === pattern.id
-                      ? row.track.id
-                      : undefined
-                  "
+                  :playing-track-id="bar === playbackBar && playingPatterns.get(row.track.id) === pattern.id ? row.track.id : undefined"
                 />
               </button>
+
               <button
                 v-if="pattern"
                 type="button"
@@ -83,6 +81,7 @@
               >
                 ⋯
               </button>
+
               <button
                 v-else
                 type="button"
@@ -98,6 +97,7 @@
             </div>
           </div>
         </div>
+
         <button
           type="button"
           class="arrangement__append"
@@ -108,6 +108,7 @@
         >
           +
         </button>
+
         <div v-if="playbackBar !== null" class="arrangement__playback" :style="playbackStyle">
           <PatternPlayhead :steps="STEPS_PER_BAR" />
         </div>
@@ -200,8 +201,7 @@ export default defineComponent({
     appendBar: () => true,
     removeBar: (...args: [bar: number]) => args.length === 1,
     open: (...args: [trackId: string, patternId: string | null, bar: number]) => args.length === 3,
-    assign: (...args: [trackId: string, bar: number, patternId: string | null]) =>
-      args.length === 3,
+    assign: (...args: [trackId: string, bar: number, patternId: string | null]) => args.length === 3,
     create: (...args: [trackId: string, bar: number]) => args.length === 2,
   },
 
@@ -249,28 +249,19 @@ export default defineComponent({
     },
 
     pickerPatternId() {
-      return this.picker
-        ? (this.arrangement.lanes[this.picker.trackId]?.[this.picker.bar] ?? null)
-        : null
+      return this.picker ? (this.arrangement.lanes[this.picker.trackId]?.[this.picker.bar] ?? null) : null
     },
 
     rows() {
       return this.tracks.map((track, index) => {
-        const patterns = new Map(
-          track.patterns.map((pattern, index) => [pattern.id, { pattern, number: index + 1 }]),
-        )
+        const patterns = new Map(track.patterns.map((pattern, index) => [pattern.id, { pattern, number: index + 1 }]),)
         const lane = this.arrangement.lanes[track.id]
         const slots = Array.from({ length: this.arrangement.barCount }, (_, bar) => {
           const id = lane?.[bar]
           const entry = id == null ? undefined : patterns.get(id)
           return entry ?? { pattern: null, number: null }
         })
-        return {
-          track,
-          range: pitchRangeFor(track.instrument),
-          slots,
-          style: { '--track-color': trackColor(index) },
-        }
+        return { track, range: pitchRangeFor(track.instrument), slots, style: { '--track-color': trackColor(index) } }
       })
     },
 
@@ -283,11 +274,13 @@ export default defineComponent({
       if (!cell || cell.trackId !== this.selectedTrackId) {
         return null
       }
+
       const track = this.tracks.find((track) => track.id === cell.trackId)
       const patternId = this.arrangement.lanes[cell.trackId]?.[cell.bar]
       if (!track || patternId === undefined) {
         return null
       }
+
       return { track, bar: cell.bar, patternId }
     },
   },
@@ -304,10 +297,7 @@ export default defineComponent({
 
   methods: {
     slotLabel(track: Track, bar: number, number: number | null): string {
-      const pattern =
-        number === null
-          ? this.$t('arrangement.emptySlot')
-          : this.$t('arrangement.patternNumber', { number })
+      const pattern = number === null ? this.$t('arrangement.emptySlot') : this.$t('arrangement.patternNumber', { number })
       return this.$t('arrangement.slotLabel', { track: track.name, bar: bar + 1, pattern })
     },
 
@@ -326,6 +316,7 @@ export default defineComponent({
       this.closePicker()
       this.$emit('appendBar')
       await nextTick()
+
       if (this.viewport) {
         this.viewport.scrollLeft = this.viewport.scrollWidth
       }
@@ -333,11 +324,11 @@ export default defineComponent({
 
     removeBar(bar: number): void {
       this.closePicker()
+
       if (this.activeCell && this.activeCell.bar >= bar) {
-        this.activeCell = this.activeCell.bar === bar
-          ? null
-          : { ...this.activeCell, bar: this.activeCell.bar - 1 }
+        this.activeCell = this.activeCell.bar === bar ? null : { ...this.activeCell, bar: this.activeCell.bar - 1 }
       }
+
       this.$emit('removeBar', bar)
       this.viewport?.focus({ preventScroll: true })
     },
@@ -351,23 +342,19 @@ export default defineComponent({
       if (!(trigger instanceof HTMLButtonElement)) {
         return
       }
+
       if (this.isPickerFor(trackId, bar)) {
         this.closePicker(true)
         return
       }
-      const anchor =
-        trigger.parentElement?.getBoundingClientRect() ?? trigger.getBoundingClientRect()
+
+      const anchor = trigger.parentElement?.getBoundingClientRect() ?? trigger.getBoundingClientRect()
       const width = Math.min(PICKER_WIDTH, window.innerWidth - 2 * PICKER_GAP)
-      const left = Math.max(
-        PICKER_GAP,
-        Math.min(anchor.left, window.innerWidth - width - PICKER_GAP),
-      )
+      const left = Math.max(PICKER_GAP, Math.min(anchor.left, window.innerWidth - width - PICKER_GAP),)
       const above = anchor.top - PICKER_GAP
       const below = window.innerHeight - anchor.bottom - PICKER_GAP
-      const vertical =
-        above > below
-          ? { bottom: `${window.innerHeight - anchor.top + PICKER_GAP}px` }
-          : { top: `${anchor.bottom + PICKER_GAP}px` }
+      const vertical = above > below ? { bottom: `${window.innerHeight - anchor.top + PICKER_GAP}px` } : { top: `${anchor.bottom + PICKER_GAP}px` }
+      
       this.picker = {
         trackId,
         bar,
@@ -379,6 +366,7 @@ export default defineComponent({
           maxHeight: `${Math.max(0, Math.max(above, below) - PICKER_GAP)}px`,
         },
       }
+
       await nextTick()
       this.pickerElement?.focus({ preventScroll: true })
     },
@@ -387,6 +375,7 @@ export default defineComponent({
       const trigger = this.picker?.trigger
       const cell = trigger?.parentElement
       this.picker = null
+
       if (restoreFocus && trigger) {
         void nextTick(() => {
           const target = trigger.isConnected ? trigger : cell?.querySelector('button')
@@ -400,6 +389,7 @@ export default defineComponent({
       if (!cell) {
         return
       }
+
       this.closePicker(true)
       this.$emit('assign', cell.trackId, cell.bar, patternId)
       if (patternId !== null) {
@@ -417,20 +407,13 @@ export default defineComponent({
     },
 
     dismissOnOutsideClick(event: PointerEvent): void {
-      if (
-        event.target instanceof Node &&
-        !this.pickerElement?.contains(event.target) &&
-        !this.picker?.trigger.contains(event.target)
-      ) {
+      if (event.target instanceof Node && !this.pickerElement?.contains(event.target) && !this.picker?.trigger.contains(event.target)) {
         this.closePicker()
       }
     },
 
     dismissOnFocusOut(event: FocusEvent): void {
-      if (
-        event.relatedTarget instanceof Node &&
-        !this.pickerElement?.contains(event.relatedTarget)
-      ) {
+      if (event.relatedTarget instanceof Node && !this.pickerElement?.contains(event.relatedTarget)) {
         this.closePicker()
       }
     },

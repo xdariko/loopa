@@ -57,12 +57,15 @@ export function usePointerDrag() {
       }
       options.onMove(currentDelta())
     }
+  
     const handleScroll = () => options.onMove(currentDelta())
+  
     const handleUp = (current: PointerEvent) => {
       trackPointer(current)
       stop()
       options.onEnd(currentDelta())
     }
+  
     const handleCancel = () => {
       stop()
       options.onCancel()

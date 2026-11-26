@@ -113,7 +113,7 @@ export default defineComponent({
   watch: {
     '$route.name': {
       async handler(name: RouteLocationNormalizedLoaded['name']) {
-        if (name === 'account') {
+        if (name === 'account' || this.$route.meta.requiresAccount) {
           return
         }
         const controller = new AbortController()

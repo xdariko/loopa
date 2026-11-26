@@ -3,19 +3,16 @@
     <h1 class="page__title">{{ project?.title ?? $t('shared.title') }}</h1>
     <p v-if="loading" class="page__hint" role="status">{{ $t('shared.loading') }}</p>
     <p v-if="error" class="page__error" role="alert">{{ error }}</p>
+
     <div v-if="project" class="page__actions">
       <button type="button" class="page__button page__button--primary" @click="togglePlayback">
         {{ playback.isPlaying ? $t('common.pause') : $t('common.play') }}
       </button>
-      <button
-        v-if="!accountRequired"
-        type="button"
-        class="page__button"
-        :disabled="copying || persistence.isSaving"
-        @click="makeCopy"
-      >
+
+      <button v-if="!accountRequired" type="button" class="page__button" :disabled="copying || persistence.isSaving" @click="makeCopy">
         {{ copying ? $t('shared.copying') : $t('shared.copy') }}
       </button>
+
       <RouterLink v-else to="/account" class="page__button">
         {{ $t('common.signInOrRegister') }}
       </RouterLink>
@@ -61,6 +58,7 @@ export default defineComponent({
         this.loading = true
         this.accountRequired = false
         this.error = ''
+
         try {
           const remote = await getSharedProject(token, signal)
           this.project = await prepareProject(remote, signal)
@@ -87,6 +85,7 @@ export default defineComponent({
   methods: {
     async togglePlayback(): Promise<void> {
       this.error = ''
+
       try {
         await this.playback.toggle()
       } catch {
@@ -95,15 +94,13 @@ export default defineComponent({
     },
 
     async makeCopy(): Promise<void> {
-      if (
-        this.persistence.isDirty &&
-        !window.confirm(this.$t('shared.confirmCopy'))
-      ) {
+      if (this.persistence.isDirty && !window.confirm(this.$t('shared.confirmCopy'))) {
         return
       }
       const { signal } = this.controller
       this.copying = true
       this.error = ''
+
       try {
         const remote = await copySharedProject(this.token)
         await this.persistence.open(remote, signal)

@@ -73,22 +73,19 @@ export default defineComponent({
     },
 
     advance(time: number): void {
-      const elapsedSeconds =
-        this.lastFrameTime === null ? 0 : (time - this.lastFrameTime) / MS_PER_SECOND
-      if (
-        this.reducedMotion &&
-        this.lastFrameTime !== null &&
-        elapsedSeconds < REDUCED_MOTION_FRAME_SECONDS
-      ) {
+      const elapsedSeconds = this.lastFrameTime === null ? 0 : (time - this.lastFrameTime) / MS_PER_SECOND
+      if (this.reducedMotion && this.lastFrameTime !== null && elapsedSeconds < REDUCED_MOTION_FRAME_SECONDS) {
         return
       }
       this.lastFrameTime = time
       const target = this.readTarget()
+
       if (this.reducedMotion) {
         this.meter.jumpTo(target)
       } else {
         this.meter.fallTowards(target, elapsedSeconds, FALL_PER_SECOND)
       }
+
       this.draw()
       this.visible = !this.meter.isSilent()
       if (!this.playing && !this.visible) {
@@ -112,6 +109,7 @@ export default defineComponent({
       const slot = width / BAND_COUNT
       const barWidth = slot * (1 - BAR_GAP_RATIO)
       const minBarHeight = MIN_BAR_HEIGHT_CSS_PX * window.devicePixelRatio
+
       context.clearRect(0, 0, width, height)
       context.fillStyle = this.barColor
       this.meter.levels.forEach((level, band) => {

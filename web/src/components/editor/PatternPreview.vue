@@ -4,11 +4,7 @@
       v-for="note in pattern.notes"
       :key="note.id"
       class="pattern-preview__note"
-      :class="{
-        'pattern-preview__note--playing':
-          playingTrackId !== undefined &&
-          playingNoteIds.has(playbackNoteKey(playingTrackId, pattern.id, note.id)),
-      }"
+      :class="{'pattern-preview__note--playing': playingTrackId !== undefined && playingNoteIds.has(playbackNoteKey(playingTrackId, pattern.id, note.id))}"
       :x="note.step"
       :y="range.max - note.pitch"
       :width="note.duration"

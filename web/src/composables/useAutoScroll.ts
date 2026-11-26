@@ -9,6 +9,7 @@ function edgeSpeed(position: number, start: number, end: number): number {
   if (position < start + EDGE_ZONE) {
     return -MAX_SPEED * clamp((start + EDGE_ZONE - position) / EDGE_ZONE, 0, 1)
   }
+
   if (position > end - EDGE_ZONE) {
     return MAX_SPEED * clamp((position - (end - EDGE_ZONE)) / EDGE_ZONE, 0, 1)
   }
@@ -26,12 +27,14 @@ export function useAutoScroll() {
     if (!target) {
       return
     }
+  
     const rect = target.getBoundingClientRect()
     const speedX = edgeSpeed(pointerX, rect.left, rect.right)
     const speedY = edgeSpeed(pointerY, rect.top, rect.bottom)
     if (speedX === 0 && speedY === 0) {
       return
     }
+
     target.scrollLeft += speedX
     target.scrollTop += speedY
     frame = requestAnimationFrame(tick)

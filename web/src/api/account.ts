@@ -6,7 +6,7 @@ interface Account {
   readonly email: string | null
 }
 
-export async function getAccount(signal: AbortSignal): Promise<Account> {
+export async function getAccount(signal?: AbortSignal): Promise<Account> {
   const response = await apiFetch('/api/session', { signal })
   if (!response.ok) {
     throw new Error(t('account.checkFailed'))

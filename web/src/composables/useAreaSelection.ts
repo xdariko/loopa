@@ -50,13 +50,16 @@ export function useAreaSelection(options: AreaSelectionOptions) {
       onMove: (delta) => {
         area.value = areaFrom(origin, delta)
       },
+
       onEnd: (delta) => {
         area.value = null
         options.onSelect(areaFrom(origin, delta))
       },
+
       onCancel: () => {
         area.value = null
       },
+
     })
     if (started) {
       area.value = areaFrom(origin, NO_DELTA)

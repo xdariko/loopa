@@ -10,10 +10,7 @@
           ref="cells"
           :key="step"
           class="pattern-grid__cell"
-          :class="{
-            'pattern-grid__cell--sharp': row.sharp,
-            'pattern-grid__cell--beat': step % STEPS_PER_BEAT === 0,
-          }"
+          :class="{'pattern-grid__cell--sharp': row.sharp, 'pattern-grid__cell--beat': step % STEPS_PER_BEAT === 0}"
           :style="cellPlacement(row.line, step)"
           :data-step="step"
           :data-pitch="row.pitch"
@@ -46,21 +43,12 @@
         :aria-pressed="isSelected(note)"
         @pointerdown="handleNotePointerDown($event, note, 'move')"
       >
-        <span
-          class="pattern-grid__resize"
-          aria-hidden="true"
-          @pointerdown.stop="handleNotePointerDown($event, note, 'resize')"
-        />
+        <span class="pattern-grid__resize"  aria-hidden="true"  @pointerdown.stop="handleNotePointerDown($event, note, 'resize')"/>
       </button>
 
       <PatternPlayhead v-if="!hidePlayhead" :steps="pattern.steps" :style="playheadPlacement" />
 
-      <div
-        v-if="selectionArea"
-        class="pattern-grid__area"
-        :style="areaPlacement(selectionArea)"
-        data-testid="selection-area"
-      />
+      <div v-if="selectionArea" class="pattern-grid__area" :style="areaPlacement(selectionArea)" data-testid="selection-area"/>
     </div>
   </div>
 </template>
@@ -117,6 +105,7 @@ export default defineComponent({
       steps: props.pattern.steps,
       range: pitchRangeFor(props.instrument),
     })
+
     function measureCell(): GridCellSize | null {
       const cell = cells.value?.[0]
       if (!cell) {
@@ -125,6 +114,7 @@ export default defineComponent({
       const { width, height } = cell.getBoundingClientRect()
       return width > 0 && height > 0 ? { width, height } : null
     }
+
     const drag = useNoteDrag({
       bounds,
       cellSize: measureCell,
@@ -132,6 +122,7 @@ export default defineComponent({
       onMove: (noteIds, offset) => emit('move', noteIds, offset),
       onResize: (noteIds, durationChange) => emit('resize', noteIds, durationChange),
     })
+
     const selection = useAreaSelection({
       bounds,
       scrollContainer: () => viewport.value,
