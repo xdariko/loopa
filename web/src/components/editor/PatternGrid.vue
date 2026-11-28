@@ -42,6 +42,7 @@
         :aria-label="noteLabel(note)"
         :aria-pressed="isSelected(note)"
         @pointerdown="handleNotePointerDown($event, note, 'move')"
+        @contextmenu="handleNoteContextMenu($event, note)"
       >
         <span class="pattern-grid__resize"  aria-hidden="true"  @pointerdown.stop="handleNotePointerDown($event, note, 'resize')"/>
       </button>
@@ -91,6 +92,7 @@ export default defineComponent({
 
   emits: {
     add: (...args: [position: NotePosition]) => args.length === 1,
+    remove: (...args: [noteIds: readonly string[]]) => args.length === 1,
     select: (...args: [noteId: string]) => args.length === 1,
     toggle: (...args: [noteId: string]) => args.length === 1,
     selectArea: (...args: [noteIds: readonly string[]]) => args.length === 1,
@@ -282,6 +284,9 @@ export default defineComponent({
     },
 
     handleNotePointerDown(event: PointerEvent, note: Note, gesture: NoteGesture): void {
+      if (event.button !== 0) {
+        return
+      }
       if (event.shiftKey) {
         this.$emit('toggle', note.id)
         return
@@ -291,6 +296,13 @@ export default defineComponent({
         this.drag.startResize(event, group)
       } else {
         this.drag.startMove(event, group)
+      }
+    },
+
+    handleNoteContextMenu(event: MouseEvent, note: Note): void {
+      if (event.button === 2) {
+        event.preventDefault()
+        this.$emit('remove', [note.id])
       }
     },
 

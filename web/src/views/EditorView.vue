@@ -56,6 +56,7 @@
           @toggle="editor.toggleNoteSelection"
           @select-area="editor.addToSelection"
           @move="editor.moveNotes"
+          @remove="editor.deleteNotes"
           @resize="editor.resizeNotes"
         />
         <p v-else class="editor__placeholder">{{ $t('editor.emptyGrid') }}</p>

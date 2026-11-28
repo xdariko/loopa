@@ -170,10 +170,13 @@ export const useEditorStore = defineStore('editor', {
       )
     },
 
-    deleteSelectedNotes(): boolean {
-      const noteIds = this.selectedNoteIds
-      this.clearSelection()
+    deleteNotes(noteIds: readonly string[]): boolean {
+      this.selectedNoteIds = this.selectedNoteIds.filter((id) => !noteIds.includes(id))
       return this.editSelectedPattern((pattern) => notes.removeNotes(pattern, noteIds))
+    },
+
+    deleteSelectedNotes(): boolean {
+      return this.deleteNotes(this.selectedNoteIds)
     },
 
     addTrack(instrument: Instrument, name = instrumentLabel(instrument)): boolean {
